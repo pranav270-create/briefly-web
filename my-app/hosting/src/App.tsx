@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { GoogleLogin } from 'react-google-login';
+
 import Footer from './Footer.tsx';
 import './App.css';
 
@@ -66,9 +68,21 @@ export default function Home() {
     fetchData();
   }, []);
 
+  const responseGoogle = (response: any) => {
+    console.log(response);
+  }
 
   return (
     <div className="main_container">
+      <div>
+      <GoogleLogin
+        clientId="673278476323-gd8p0jcn0lspqs3e8n9civolog1n1b55.apps.googleusercontent.com"
+        buttonText="Login with Google"
+        onSuccess={responseGoogle}
+        onFailure={responseGoogle}
+        cookiePolicy={'single_host_origin'}
+      />
+    </div>
       <main className="flex_container">
         <div className="briefly_shadow">
           <pre className="mono_text">
