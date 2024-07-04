@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import Footer from './Footer';
+import Footer from './Footer.tsx';
+import './App.css';
 
 const baseUrl: string = 'https://briefly-backend-krnivdrwhq-uk.a.run.app';
 
@@ -9,16 +10,16 @@ interface Email {
   summary: string;
 }
 
-interface AttendeeEmail {
-  attendee: string;
-  summary: string;
-}
-
 interface CalendarEvent {
-  event: string;
+  summary: string;
+  creator: string;
+  organizer: string;
+  attendees: string[];
   start: string;
   end: string;
-  attendee_summaries: AttendeeEmail[];
+  description: string;
+  location: string;
+  context: string;
 }
 
 export default function Home() {
@@ -43,8 +44,7 @@ export default function Home() {
         ]);
 
         if (!emailsResponse.ok || !calendarResponse.ok) {
-          // return some sort of error page
-          console.log('not found');
+          throw new Error(`HTTP error! status: ${emailsResponse.status} ${calendarResponse.status}`);
         }
 
         const emailsData = await emailsResponse.json();
@@ -67,10 +67,10 @@ export default function Home() {
 
 
   return (
-    <div className="bg-midjourney_navy flex flex-col min-h-screen text-white">
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="bg-briefly_box p-6 mb-8 rounded-lg shadow-lg flex justify-center items-center">
-          <pre className="text-white font-mono text-sm">
+    <div className="main_container">
+      <main className="flex_container">
+        <div className="briefly_shadow">
+          <pre className="mono_text">
 {` _          _       __ _       
 | |        (_)     / _| |      
 | |__  _ __ _  ___| |_| |_   _ 
@@ -81,44 +81,60 @@ export default function Home() {
                          |___/ `}
           </pre>
         </div>
-        <h2 className="text-3xl font-bold mb-6">personal</h2>
-        <ul className="space-y-2">
-          {calendarEvents.map((event, index) => (
-            <li key={index} className="p-4">
-              <p className="text-md font-semibold text-main_white">{event.event}</p>
-              {event.attendee_summaries && event.attendee_summaries.length > 0 && (
-                <div>
-                  <ul className="list-disc list-inside">
-                    {event.attendee_summaries.map((summary, idx) => (
-                      <li key={idx} className="ml-4">
-                        <span className="font-medium">{summary.attendee}:</span> {summary.summary}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </li>
-          ))}
-          {personalEmails && personalEmails.map((email, index) => (
-            <li key={index} className="p-4">
-              <p className="text-md font-semibold text-main_white">{email.sender}</p>
-              <p className="text-md text-sub_grey">{email.subject}</p>
-              <p className="text-sm text-sub_sub_grey">{email.summary}</p>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-8"></div>
+        <div className="text_content">
+          <h2 className="h2_text">personal</h2>
+          <ul className="ul_text">
+            {calendarEvents.map((event, index) => (
+              <li key={index} className="p4">
+                <p className="p_text">{event.summary}</p>
+                <p className="p_text">
+                  {new Date(event.start).toLocaleString()} - {new Date(event.end).toLocaleString()}
+                </p>
+                {event.location && (
+                  <p className="p_text">
+                    <span className="font-medium">Location:</span> {event.location}
+                  </p>
+                )}
+                {event.attendees && event.attendees.length > 0 && (
+                  <div className="mb-2">
+                    <p className="p_text">Attendees:</p>
+                    <ul className="list_disc">
+                      {event.attendees.map((attendee, idx) => (
+                        <li key={idx} className="text-sm text-sub_sub_grey ml-4">{attendee}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-        <h2 className="text-3xl font-bold mb-6">news</h2>
-        <ul className="space-y-2">
-          {newsEmails && newsEmails.map((email, index) => (
-            <li key={index} className="p-4">
-              <p className="text-md font-semibold text-main_white">{email.sender}</p>
-              <p className="text-md text-sub_grey">{email.subject}</p>
-              <p className="text-sm text-sub_sub_grey">{email.summary}</p>
-            </li>
-          ))}
-        </ul>
+                {event.context && (
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-sub_grey mb-1">Context:</p>
+                    <p className="text-sm text-sub_sub_grey whitespace-pre-wrap">{event.context}</p>
+                  </div>
+                )}
+              </li>
+            ))}
+            {personalEmails && personalEmails.map((email, index) => (
+              <li key={index} className="p4">
+                <p className="md_text">{email.sender}</p>
+                <p className="md_text">{email.subject}</p>
+                <p className="sm_text">{email.summary}</p>
+              </li>
+            ))}
+          </ul>
+          <div className="mt_8"></div>
+
+          <h2 className="mb_6">news</h2>
+          <ul className="space-y-2">
+            {newsEmails && newsEmails.map((email, index) => (
+              <li key={index} className="p4">
+                <p className="md_text">{email.sender}</p>
+                <p className="md_text">{email.subject}</p>
+                <p className="sm_text">{email.summary}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
       </main>
       <Footer />
     </div>
