@@ -1,0 +1,1 @@
+gcloud run deploy briefly-backend --source . --platform managed --memory=4Gi --min-instances=2 --region us-east4 --allow-unauthenticated

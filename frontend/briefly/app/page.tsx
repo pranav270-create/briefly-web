@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Footer from '../components/Footer';
+import { notFound } from 'next/navigation';
+
+const baseUrl: string = 'https://briefly-backend-krnivdrwhq-uk.a.run.app';
 
 interface Email {
   subject: string;
@@ -35,12 +38,12 @@ export default function Home() {
         setIsLoading(true);
         setError(null);
         const [emailsResponse, calendarResponse] = await Promise.all([
-          fetch('http://localhost:8000/api/get-emails'),
-          fetch('http://localhost:8000/api/get-calendar')
+          fetch(`${baseUrl}/api/get-emails`),
+          fetch(`${baseUrl}/api/get-calendar`),
         ]);
 
         if (!emailsResponse.ok || !calendarResponse.ok) {
-          throw new Error(`HTTP error! status: ${emailsResponse.status} ${calendarResponse.status}`);
+          notFound();
         }
 
         const emailsData = await emailsResponse.json();

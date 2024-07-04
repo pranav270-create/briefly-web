@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+"use client";
+
 import { Inter } from "next/font/google";
 import "./globals.css";
-// import SpinningGlobe from "../components/SpinningGlobe";
 
 
 const inter = Inter({ subsets: ["latin"] });

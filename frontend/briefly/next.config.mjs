@@ -1,4 +1,9 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+    output: 'export',
+    trailingSlash: true, // Optional, helps with static hosting
+    reactStrictMode: true,
+}
 
-export default nextConfig;
+export default nextConfig
+

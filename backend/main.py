@@ -12,7 +12,7 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,6 +28,11 @@ async def load_or_save_pickle(file_name, data_function):
         with open(file_name, 'wb') as f:
             pickle.dump(data, f)
         return data
+
+
+@app.get("/")
+async def read_root():
+    return {"Hello": "World"}
 
 
 @app.get("/api/get-emails")
