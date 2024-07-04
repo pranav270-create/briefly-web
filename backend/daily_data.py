@@ -3,7 +3,7 @@ from typing import List, Tuple
 from pydantic import BaseModel
 from anthropic import AsyncAnthropic
 from integrations.gmail import get_messages_since_yesterday, get_attendee_email_threads, GmailMessage
-from integrations.google_calendar import get_today_events
+from integrations.google_calendar import get_today_events, CalendarEvent
 
 DEBUG = 1
 SELF_EMAIL = "markacastellano2@gmail.com"
@@ -15,18 +15,31 @@ class EmailResponse(BaseModel):
     spam_emails: List[GmailMessage]
 
 
+class CalendarResponse(BaseModel):
+    events: List[CalendarEvent]
+
+
 def anthropic_cost(usage):
     return (usage.input_tokens * 3 * 1e-6) + (usage.output_tokens * 15 * 1e-6) # sonnet pricing
 
 
-async def summarize_thread(client, thread_messages):
-    combined_content = "\n\n".join([f"Subject: {msg.subject}\nFrom: {msg.sender}\nBody: {msg.body[:500]}..." for msg in thread_messages])
+async def summarize_thread(client, thread):
+    thread_messages = [t['messages'][0] for t in thread]
+    attendees = [t['attendees'] for t in thread]
+    all_participants = [t['all_participants'] for t in thread]
+    
+    combined_content = "\n\n".join([
+        f"Subject: {msg.subject}\nFrom: {msg.sender} <{msg.sender_email}>\nBody: {msg.body[:500]}..." 
+        for msg in thread_messages
+    ])
+    
     prompt = f"""
     Summarize the following email thread concisely:
 
     {combined_content}
 
     Provide a brief summary that captures the main points and any important details.
+    Focus on information relevant to the attendees listed above.
     """
     
     response = await client.messages.create(
@@ -39,48 +52,32 @@ async def summarize_thread(client, thread_messages):
     return response.content[0].text.strip(), cost
 
 
-async def get_event_related_emails():
+async def get_event_related_emails() -> CalendarResponse:
     """
     Get's emails related to todays events
     """
     client = AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     
     # Get today's events
-    events = await get_today_events()
+    events: List[CalendarEvent] = get_today_events()
     
-    event_summaries = []
     total_cost = 0
     for event in events:
-        attendees = event['attendees']
+        attendees = event.attendees
         non_self_attendees = [attendee for attendee in attendees if attendee != SELF_EMAIL]
         
-        event_summary = {
-            'event': event['summary'],
-            'start': event['start'],
-            'end': event['end'],
-            'attendee_summaries': []
-        }
+        thread_messages = get_attendee_email_threads(non_self_attendees)
 
-
-        for attendee in non_self_attendees:
-            # Get email threads for the attendee
-            thread_messages = get_attendee_email_threads(attendee)
-            
-            if thread_messages:
-                # Summarize the thread
-                summary, cost = await summarize_thread(client, thread_messages)
-                event_summary['attendee_summaries'].append({
-                    'attendee': attendee,
-                    'summary': summary
-                })
-                total_cost += cost
-        
-        event_summaries.append(event_summary)
-        
+        if thread_messages:
+            # Summarize the thread
+            summary, cost = await summarize_thread(client, thread_messages)
+            event.context = summary
+            total_cost += cost
+                
     if DEBUG >= 1:
         print(f"\033[95mTotal Cost: ${total_cost:.5f}\033[0m", flush=True)
     
-    return event_summaries
+    return CalendarResponse(events=events)
 
 
 async def classify_email(client, email: GmailMessage) -> Tuple[str, int]:
@@ -152,7 +149,7 @@ async def summarize_email(client, email: GmailMessage) -> Tuple[str, int]:
     return response.content[0].text.strip(), cost
 
 
-async def get_email_data() -> Tuple[List[GmailMessage], List[GmailMessage]]:
+async def get_email_data() -> EmailResponse:
     """
     Gets emails from past day
     Classifies them as personal, news, spam
@@ -215,4 +212,4 @@ async def get_email_data() -> Tuple[List[GmailMessage], List[GmailMessage]]:
 
 
 if __name__ == "__main__":
-    asyncio.run(get_email_data())
+    asyncio.run(get_event_related_emails())

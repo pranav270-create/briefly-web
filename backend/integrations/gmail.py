@@ -1,4 +1,4 @@
-import os, base64
+import os, base64, re
 from typing import List, Optional
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -6,7 +6,8 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from collections import defaultdict
 
 
 CREDENTIALS = "C:/Users/marka/fun/briefly/backend/integrations/markacastellano2@gmail_credentials_desktop.json"
@@ -17,13 +18,24 @@ class GmailMessage(BaseModel):
     threadId: str
     labels: List[str]
     snippet: str
-    subject: str
-    sender: str
-    sender_email: str
+    subject: str = Field(default="")
+    sender: str = Field(default="")
+    sender_email: str = Field(default="")
     body: str
     date: str
     classification: Optional[str] = None
     summary: str = ""
+
+
+# def extract_email(string: str) -> str:
+#     return string.split('<')[1].split('>')[0]
+
+def extract_email(address):
+    """Extract email from a string that might be in the format 'Name <email@example.com>'"""
+    match = re.search(r'<(.+@.+)>', address)
+    if match:
+        return match.group(1)
+    return address if '@' in address else ''
 
 
 def get_google_api_service(service_name: str, version: str):
@@ -110,32 +122,68 @@ def get_messages_since_yesterday():
     return downloaded_messages
 
 
-def get_attendee_email_threads(attendee, max_threads=3):
+def get_attendee_email_threads(attendees: List[str], threads_per_attendee = 10):
     service = get_google_api_service('gmail', 'v1')
-    query = f"to:{attendee} OR from:{attendee}"
-    threads = service.users().threads().list(userId='me', q=query).execute().get('threads', [])
     
-    thread_messages = []
-    for thread in threads[:max_threads]:
-        thread_data = service.users().threads().get(userId='me', id=thread['id']).execute()
-        for msg in thread_data['messages']:
-            headers = msg['payload']['headers']
-            subject = next((header['value'] for header in headers if header['name'].lower() == 'subject'), 'No Subject')
-            sender = next((header['value'] for header in headers if header['name'].lower() == 'from'), 'Unknown Sender')
-            body = get_message_body(msg['payload'])            
-            thread_messages.append(GmailMessage(
-                id=msg['id'],
-                threadId=msg['threadId'],
-                labels=msg['labelIds'],
-                snippet=msg['snippet'],
-                subject=subject,
-                sender=sender,
-                body=body,
-                date=msg['internalDate']
-            ))
-    
-    return thread_messages
+    # attendees = ['pranaviyer2@gmail.com', 'donny@apeiron.life']
+    all_threads = []
+    thread_attendee_map = defaultdict(set)
+    for attendee in attendees:
+        query = f"(to:{attendee} OR from:{attendee})"
+        results = service.users().threads().list(userId='me', q=query, maxResults=threads_per_attendee).execute()
+        threads = results.get('threads', [])
+        all_threads.extend(threads)
+        for thread in threads:
+            thread_attendee_map[thread['id']].add(attendee)
 
+    # get threads with multiple attendees
+    multi_attendee_threads = []
+    for thread in all_threads:
+        if len(thread_attendee_map[thread['id']]) > 1:
+            thread_data = service.users().threads().get(userId='me', id=thread['id']).execute()
+            thread_msgs = []
+            thread_participants = set()
+
+            for msg in thread_data['messages']:
+                headers = msg['payload']['headers']
+                subject = next((header['value'] for header in headers if header['name'].lower() == 'subject'), 'No Subject')
+                sender = next((header['value'] for header in headers if header['name'].lower() == 'from'), 'Unknown Sender')
+                recipients = next((header['value'] for header in headers if header['name'].lower() == 'to'), '')
+                cc = next((header['value'] for header in headers if header['name'].lower() == 'cc'), '')
+                body = get_message_body(msg['payload'])
+                
+                sender_email = extract_email(sender)
+                if recipients:
+                    recipient_emails = [extract_email(r.strip()) for r in recipients.split(',')]
+                else:
+                    recipient_emails = []
+                if cc:
+                    recipient_emails += [extract_email(r.strip()) for r in cc.split(',')]
+                thread_participants.update([sender_email] + recipient_emails)
+                
+                thread_msgs.append(GmailMessage(
+                    id=msg['id'],
+                    threadId=msg['threadId'],
+                    labels=msg['labelIds'],
+                    snippet=msg['snippet'],
+                    subject=subject,
+                    sender = sender.split('<')[0].strip(),
+                    sender_email=sender_email,
+                    body=body,
+                    date=msg['internalDate']
+                ))
+
+            multi_attendee_threads.append({
+                'messages': thread_msgs,
+                'attendees': thread_attendee_map[thread['id']],
+                'all_participants': thread_participants
+            })
+
+    # Sort threads by the number of attendees, in descending order
+    multi_attendee_threads.sort(key=lambda x: len(x['attendees']), reverse=True)
+    return multi_attendee_threads
+
+    
 if __name__ == '__main__':
     messages: List[GmailMessage] = get_messages_since_yesterday()
     print(f"Downloaded {len(messages)} messages.")

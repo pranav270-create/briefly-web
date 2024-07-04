@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import Footer from './Footer.tsx';
 import './App.css';
 
-const baseUrl: string = 'https://briefly-backend-krnivdrwhq-uk.a.run.app';
+// const baseUrl: string = 'https://briefly-backend-krnivdrwhq-uk.a.run.app';
+const baseUrl: string = 'http://localhost:8000';
 
 interface Email {
   subject: string;
@@ -84,7 +85,7 @@ export default function Home() {
         <div className="text_content">
           <h2 className="h2_text">personal</h2>
           <ul className="ul_text">
-            {calendarEvents.map((event, index) => (
+            {calendarEvents && calendarEvents.map((event, index) => (
               <li key={index} className="p4">
                 <p className="p_text">{event.summary}</p>
                 <p className="p_text">
