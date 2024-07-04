@@ -1,7 +1,6 @@
 import os, base64, re
 from typing import List, Optional
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
@@ -9,9 +8,8 @@ from bs4 import BeautifulSoup
 from pydantic import BaseModel, Field
 from collections import defaultdict
 
+from .auth import get_google_api_service
 
-CREDENTIALS = "C:/Users/marka/fun/briefly/backend/integrations/markacastellano2@gmail_credentials_desktop.json"
-TOKEN = "C:/Users/marka/fun/briefly/backend/integrations/token.json"
 
 class GmailMessage(BaseModel):
     id: str
@@ -27,35 +25,12 @@ class GmailMessage(BaseModel):
     summary: str = ""
 
 
-# def extract_email(string: str) -> str:
-#     return string.split('<')[1].split('>')[0]
-
 def extract_email(address):
     """Extract email from a string that might be in the format 'Name <email@example.com>'"""
     match = re.search(r'<(.+@.+)>', address)
     if match:
         return match.group(1)
     return address if '@' in address else ''
-
-
-def get_google_api_service(service_name: str, version: str):
-    """
-    Gets Google API service, which lets you log into Google APIs
-    """
-    SCOPES = ["https://mail.google.com/", "https://www.googleapis.com/auth/calendar"]
-    creds = None
-    if os.path.exists(TOKEN):
-        creds = Credentials.from_authorized_user_file(TOKEN, SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS, SCOPES)
-            creds = flow.run_local_server(port=0)
-        assert (creds) is not None, "No GMAIL credientals found"
-        with open(TOKEN, 'w') as token:
-            token.write(creds.to_json())
-    return build(service_name, version, credentials=creds)
 
 
 def decode_and_clean(encoded_data):
@@ -78,9 +53,8 @@ def get_message_body(payload):
     return "No readable content found"
 
 
-
-def get_messages_since_yesterday():
-    service = get_google_api_service('gmail', 'v1')
+def get_messages_since_yesterday(access_token: str):
+    service = get_google_api_service('gmail', 'v1', access_token)
     
     # Calculate yesterday's date and today's date
     yesterday = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
@@ -122,8 +96,8 @@ def get_messages_since_yesterday():
     return downloaded_messages
 
 
-def get_attendee_email_threads(attendees: List[str], threads_per_attendee = 10):
-    service = get_google_api_service('gmail', 'v1')
+def get_attendee_email_threads(access_token: str, attendees: List[str], threads_per_attendee = 10):
+    service = get_google_api_service('gmail', 'v1', access_token)
     
     # attendees = ['pranaviyer2@gmail.com', 'donny@apeiron.life']
     all_threads = []

@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 sys.path.append('..')
-from .gmail import get_google_api_service
+from .auth import get_google_api_service
 
 DEBUG = 1
 
@@ -20,9 +20,9 @@ class CalendarEvent(BaseModel):
     context: str = Field(default="")
 
 
-def get_today_events(days_before=1, days_after=0):
-    service = get_google_api_service("calendar", "v3")
-    
+def get_today_events(access_token: str, days_before=1, days_after=0):
+    service = get_google_api_service("calendar", "v3", access_token)
+
     # Get the start and end of the desired date range
     today = datetime.now().date()
     start_date = today - timedelta(days=days_before)

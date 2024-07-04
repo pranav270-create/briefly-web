@@ -2,12 +2,11 @@ import asyncio, os
 from typing import List, Tuple
 from pydantic import BaseModel
 from anthropic import AsyncAnthropic
+
 from integrations.gmail import get_messages_since_yesterday, get_attendee_email_threads, GmailMessage
 from integrations.google_calendar import get_today_events, CalendarEvent
 
 DEBUG = 1
-SELF_EMAIL = "markacastellano2@gmail.com"
-
 
 class EmailResponse(BaseModel):
     personal_emails: List[GmailMessage]
@@ -52,21 +51,21 @@ async def summarize_thread(client, thread):
     return response.content[0].text.strip(), cost
 
 
-async def get_event_related_emails() -> CalendarResponse:
+async def get_event_related_emails(access_token: str, self_email: str) -> CalendarResponse:
     """
     Get's emails related to todays events
     """
     client = AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     
     # Get today's events
-    events: List[CalendarEvent] = get_today_events()
+    events: List[CalendarEvent] = get_today_events(access_token)
     
     total_cost = 0
     for event in events:
         attendees = event.attendees
-        non_self_attendees = [attendee for attendee in attendees if attendee != SELF_EMAIL]
+        non_self_attendees = [attendee for attendee in attendees if attendee != self_email]
         
-        thread_messages = get_attendee_email_threads(non_self_attendees)
+        thread_messages = get_attendee_email_threads(access_token, non_self_attendees)
 
         if thread_messages:
             # Summarize the thread
@@ -149,14 +148,14 @@ async def summarize_email(client, email: GmailMessage) -> Tuple[str, int]:
     return response.content[0].text.strip(), cost
 
 
-async def get_email_data() -> EmailResponse:
+async def get_email_data(access_token: str) -> EmailResponse:
     """
     Gets emails from past day
     Classifies them as personal, news, spam
     Summarizes them
     """
     # get emails
-    emails: List[GmailMessage] = get_messages_since_yesterday()
+    emails: List[GmailMessage] = get_messages_since_yesterday(access_token)
     
     # classify emails
     client = AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])

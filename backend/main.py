@@ -1,7 +1,7 @@
-import pickle, os
-from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Depends
 from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
 
 from daily_data import get_email_data, get_event_related_emails, EmailResponse, CalendarResponse
 
@@ -16,27 +16,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class Token(BaseModel):
+    idToken: str
 
-async def load_or_save_pickle(file_name, data_function):
-    if os.path.exists(file_name):
-        with open(file_name, 'rb') as f:
-            return pickle.load(f)
-    else:
-        data = await data_function()
-        with open(file_name, 'wb') as f:
-            pickle.dump(data, f)
-        return data
+@app.post('/api/token')
+async def api_get_google_service(token: Token):
+    try:
+        token = token.idToken
+        print(token, flush=True)
+        return jsonable_encoder({"status": "success"})
+    except Exception as e:
+        return jsonable_encoder({"status": "error", "message": str(e)})
 
 
-@app.get("/api/get-emails")
-async def get_emails():
-    email_data: EmailResponse = await load_or_save_pickle('email_data.pickle', get_email_data)
+@app.post("/api/get-emails")
+async def get_emails(token: Token):
+    email_data: EmailResponse = await get_email_data(token.idToken)
     return jsonable_encoder(email_data)
 
 
-@app.get("/api/get-calendar")
-async def get_calendar():
-    calendar_data: CalendarResponse = await load_or_save_pickle('calendar_events.pickle', get_event_related_emails)
+@app.post("/api/get-calendar")
+async def get_calendar(token: Token):
+    calendar_data: CalendarResponse = await get_event_related_emails(token.idToken, "pranaviyer2@gmail.com")
     return jsonable_encoder(calendar_data)
 
 
