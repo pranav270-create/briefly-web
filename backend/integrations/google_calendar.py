@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 sys.path.append('..')
-from .auth import get_google_api_service
+from .gmail import get_google_api_service
 
 DEBUG = 1
 
@@ -20,9 +20,9 @@ class CalendarEvent(BaseModel):
     context: str = Field(default="")
 
 
-def get_today_events(access_token: str, days_before=1, days_after=0):
-    service = get_google_api_service("calendar", "v3", access_token)
-
+def get_today_events(days_before=2, days_after=0):
+    service = get_google_api_service("calendar", "v3")
+    
     # Get the start and end of the desired date range
     today = datetime.now().date()
     start_date = today - timedelta(days=days_before)
@@ -37,17 +37,17 @@ def get_today_events(access_token: str, days_before=1, days_after=0):
     
     today_events: List[CalendarEvent] = []
     for event in events:
-        start = event['start'].get('dateTime', event['start'].get('date'))
-        end = event['end'].get('dateTime', event['end'].get('date'))
+        start = event["start"].get("dateTime", event["start"].get("date"))
+        end = event["end"].get("dateTime", event["end"].get("date"))
         today_events.append(CalendarEvent(
             summary=event['summary'],
-            creator=event.get('creator').get("email", "No creator"),
-            organizer=event.get('organizer').get("email", "No organizer"),
-            attendees=[attendee.get("email", "No attendee") for attendee in event.get('attendees', [])],
+            creator=event.get("creator").get("email", ""),
+            organizer=event.get("organizer").get("email", ""),
+            attendees=[attendee.get("email", "") for attendee in event.get("attendees", [])],
             start=start,
             end=end,
-            description=event.get('description', 'No description'),
-            location=event.get('location', 'No location')
+            description=event.get("description", ""),
+            location=event.get("location", "")
         ))
     
     if DEBUG >= 1:
