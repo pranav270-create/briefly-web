@@ -1,17 +1,20 @@
-import { useEffect, useState } from 'react';
-import { GoogleOAuthProvider } from '@react-oauth/google';
+"use client";
 
-import GoogleSignIn from './GoogleLogin';
-import Footer from './Footer.tsx';
-import './App.css';
-
-const baseUrl: string = 'https://briefly-backend-krnivdrwhq-uk.a.run.app';
-// const baseUrl: string = 'http://localhost:8000';
+import { useEffect, useState, useCallback } from 'react';
+import Footer from './Footer';
 
 interface Email {
+  id: string;
+  threadId: string;
+  labels: string[];
+  snippet: string;
   subject: string;
   sender: string;
-  summary: string;
+  sender_email: string;
+  body: string;
+  date: string;
+  classification: string | null;
+  summary: string | string[];
 }
 
 interface CalendarEvent {
@@ -26,136 +29,172 @@ interface CalendarEvent {
   context: string;
 }
 
+interface LessBriefData {
+  content: string;
+}
+
+interface CachedLessBriefData {
+  [key: string]: LessBriefData;
+}
+
+
 export default function Home() {
   const [personalEmails, setPersonalEmails] = useState<Email[]>([]);
   const [newsEmails, setNewsEmails] = useState<Email[]>([]);
-  //@ts-ignore
   const [spamEmails, setSpamEmails] = useState<Email[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  //@ts-ignore
-  const [isLoading, setIsLoading] = useState(true);
-  //@ts-ignore
-  const [error, setError] = useState<string | null>(null);
-  
-  const handleLoginSuccess = async (idToken: string) => {
-    try {
-      localStorage.setItem('id_token', idToken);
-      // Send the ID token to your backend
-      const response = await fetch(`${baseUrl}/api/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id_token: idToken }),
-      });
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [lessBriefData, setLessBriefData] = useState<LessBriefData | null>(null);
+  const [cachedLessBriefData, setCachedLessBriefData] = useState<CachedLessBriefData>({});
 
-      if (response.ok) {
-        console.log('Backend authentication successful');
-      } else {
-        console.error('Backend authentication failed');
-      }
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [emailsResponse, calendarResponse] = await Promise.all([
+          fetch('http://localhost:8000/api/get-emails'),
+          fetch('http://localhost:8000/api/get-calendar')
+        ]);
 
-      const requestOptions = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken: idToken }),
-      };
+        if (!emailsResponse.ok || !calendarResponse.ok) {
+          throw new Error(`HTTP error! status: ${emailsResponse.status} ${calendarResponse.status}`);
+        }
 
-      const [emailsResponse, calendarResponse] = await Promise.all([
-        fetch(`${baseUrl}/api/get-emails`, requestOptions),
-        fetch(`${baseUrl}/api/get-calendar`, requestOptions),
-      ]);
+        const emailsData = await emailsResponse.json();
+        const calendarData = await calendarResponse.json();
 
-      if (!emailsResponse.ok || !calendarResponse.ok) {
-        throw new Error(`HTTP error! status: ${emailsResponse.status} ${calendarResponse.status}`);
-      }
-
-      const emailsData = await emailsResponse.json();
-      const calendarData = await calendarResponse.json();
-
-      setPersonalEmails(emailsData.personal_emails);
-      setNewsEmails(emailsData.news_emails);
-      setSpamEmails(emailsData.spam_emails);
-      setCalendarEvents(calendarData.events);
-    } catch (error) {
-      console.error('Error during authentication:', error);
+        setPersonalEmails(emailsData.personal_emails);
+        setNewsEmails(emailsData.news_emails);
+        setSpamEmails(emailsData.spam_emails);
+        setCalendarEvents(calendarData.events);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } 
     }
-  };
+
+    fetchData();
+  }, []);
+
+  const handleItemClick = useCallback(async (id: string, data: any) => {
+    setSelectedItemId(id);
+    if (!cachedLessBriefData[id]) {
+    //   setLessBriefData(cachedLessBriefData[id]);
+    // } else {
+      try {
+        const response = await fetch('http://localhost:8000/api/less-brief', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch less brief data');
+        }
+        const lessBriefData: LessBriefData = await response.json();
+        setLessBriefData(lessBriefData);
+      } catch (error) {
+        console.error('Error fetching less brief data:', error);
+      }
+    }
+  }, [cachedLessBriefData]);
+
+  const renderItem = useCallback((item: CalendarEvent | Email, index: number, type: 'calendar' | 'email') => {
+    const id = `${type}-${index}`;
+    const itemLessBriefData = cachedLessBriefData[id];
+    return (
+      <li 
+        key={id} 
+        className={`p-4 transition-colors duration-200 rounded-lg ${(type === 'calendar' || (type === 'email' && (item as Email).classification === 'personal')) ? 'cursor-pointer' : ''} ${selectedItemId === id ? 'bg-briefly_box' : (type === 'calendar' || (type === 'email' && (item as Email).classification === 'personal')) ? 'hover:bg-briefly_box' : ''}`}
+        onClick={() => type === 'calendar' ? handleItemClick(id, item) : null}
+        >
+        {type === 'calendar' ? (
+          // Render calendar event
+          <>
+            <p className="text-md font-semibold text-main_white">{(item as CalendarEvent).summary}</p>
+            <p className="text-sm text-sub_grey mb-1">
+              {new Date((item as CalendarEvent).start).toLocaleString()} - {new Date((item as CalendarEvent).end).toLocaleString()}
+            </p>
+            {(item as CalendarEvent).location && (
+              <p className="text-sm text-sub_grey mb-1">
+                <span className="font-medium">Location:</span> {(item as CalendarEvent).location}
+              </p>
+            )}
+            {(item as CalendarEvent).context && (
+              <div className="mt-2">
+                <p className="text-sm font-medium text-sub_grey mb-1">Context:</p>
+                <p className="text-sm text-sub_sub_grey whitespace-pre-wrap">{(item as CalendarEvent).context}</p>
+              </div>
+            )}
+          </>
+        ) : (
+          // Render email
+          <>
+            <p className="text-md font-semibold text-main_white">{(item as Email).sender}</p>
+            <p className="text-md text-sub_grey">{(item as Email).subject}</p>
+            {Array.isArray((item as Email).summary) ? (
+              <div className="space-y-1">
+                {(item as Email).summary.map((summaryItem: string, summaryIndex: number) => (
+                  <div 
+                    key={summaryIndex}
+                    className="py-1.5 -ml-4 pl-4  bg-midjourney_navy rounded cursor-pointer hover:bg-briefly_box transition-colors duration-200"
+                    onClick={() => handleItemClick(`${id}-${summaryIndex}`, { ...item, summary: summaryItem })}
+                  >
+                    <p className="text-sm text-sub_sub_grey">{summaryItem}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p
+              className="text-sm text-sub_sub_grey "
+              onClick={() => handleItemClick(id, item)}
+              >
+                {(item as Email).summary}
+            </p>
+            )}
+          </>
+        )}
+        {selectedItemId === id && lessBriefData && (
+          <div className="mt-4 p-4 bg-briefly_box rounded-lg">
+            <p className="text-sm text-sub_sub_grey whitespace-pre-wrap">{lessBriefData.content}</p>
+          </div>
+        )}
+        {itemLessBriefData && (
+          <div className={`mt-4 p-4 bg-briefly_box rounded-lg ${selectedItemId === id ? '' : 'opacity-50'}`}>
+            <p className="text-sm text-sub_sub_grey whitespace-pre-wrap">{itemLessBriefData.content}</p>
+          </div>
+        )}
+      </li>
+    );
+  }, [selectedItemId, lessBriefData, handleItemClick]);
+
 
   return (
-    <GoogleOAuthProvider clientId="673278476323-gd8p0jcn0lspqs3e8n9civolog1n1b55.apps.googleusercontent.com">
-      <div className="main_container">
-            <GoogleSignIn onLoginSuccess={handleLoginSuccess} />
-        <main className="flex_container">
-          <div className="briefly_shadow">
-            <pre className="mono_text">
-  {` _          _       __ _       
-  | |        (_)     / _| |      
-  | |__  _ __ _  ___| |_| |_   _ 
-  | '_ \\| '__| |/ _ \\  _| | | | |
-  | |_) | |  | |  __/ | | | |_| |
-  |_.__/|_|  |_|\\___|_| |_|\\__, |
-                            __/ |
-                          |___/ `}
-            </pre>
-          </div>
-          <div className="text_content">
-            <h2 className="h2_text">personal</h2>
-            <ul className="ul_text">
-              {calendarEvents && calendarEvents.map((event, index) => (
-                <li key={index} className="p4">
-                  <p className="p_text">{event.summary}</p>
-                  <p className="p_text">
-                    {new Date(event.start).toLocaleString()} - {new Date(event.end).toLocaleString()}
-                  </p>
-                  {event.location && (
-                    <p className="p_text">
-                      <span className="font-medium">Location:</span> {event.location}
-                    </p>
-                  )}
-                  {event.attendees && event.attendees.length > 0 && (
-                    <div className="mb-2">
-                      <p className="p_text">Attendees:</p>
-                      <ul className="list_disc">
-                        {event.attendees.map((attendee, idx) => (
-                          <li key={idx} className="text-sm text-sub_sub_grey ml-4">{attendee}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {event.context && (
-                    <div className="mt-2">
-                      <p className="text-sm font-medium text-sub_grey mb-1">Context:</p>
-                      <p className="text-sm text-sub_sub_grey whitespace-pre-wrap">{event.context}</p>
-                    </div>
-                  )}
-                </li>
-              ))}
-              {personalEmails && personalEmails.map((email, index) => (
-                <li key={index} className="p4">
-                  <p className="md_text">{email.sender}</p>
-                  <p className="md_text">{email.subject}</p>
-                  <p className="sm_text">{email.summary}</p>
-                </li>
-              ))}
-            </ul>
-            <div className="mt_8"></div>
-
-            <h2 className="mb_6">news</h2>
-            <ul className="space-y-2">
-              {newsEmails && newsEmails.map((email, index) => (
-                <li key={index} className="p4">
-                  <p className="md_text">{email.sender}</p>
-                  <p className="md_text">{email.subject}</p>
-                  <p className="sm_text">{email.summary}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    </GoogleOAuthProvider>
+    <div className="bg-midjourney_navy flex flex-col min-h-screen text-white">
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <div className="bg-briefly_box p-6 mb-8 rounded-lg shadow-lg flex justify-center items-center">
+          <pre className="text-white font-mono text-sm">
+{` _          _       __ _       
+| |        (_)     / _| |      
+| |__  _ __ _  ___| |_| |_   _ 
+| '_ \\| '__| |/ _ \\  _| | | | |
+| |_) | |  | |  __/ | | | |_| |
+|_.__/|_|  |_|\\___|_| |_|\\__, |
+                          __/ |
+                         |___/ `}
+          </pre>
+        </div>
+        <h2 className="text-3xl font-bold mb-6">personal</h2>
+        <ul className="space-y-2">
+          {calendarEvents.map((event, index) => renderItem(event, index, 'calendar'))}
+          {personalEmails.map((email, index) => renderItem(email, index, 'email'))}
+        </ul>
+        <div className="mt-8"></div>
+        <h2 className="text-3xl font-bold mb-6">news</h2>
+        <ul className="space-y-2">
+          {newsEmails.map((email, index) => renderItem(email, index, 'email'))}
+        </ul>
+      </main>
+      <Footer />
+    </div>
   );
 }
