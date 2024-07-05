@@ -8,6 +8,7 @@ from integrations.google_calendar import CalendarEvent
 from integrations.gmail import GmailMessage
 from make_briefly import get_email_data, get_event_related_emails, EmailResponse, CalendarResponse
 from make_briefless import generate_news_summary, generate_calendar_event_details
+from helpers import DEV
 
 app = FastAPI()
 
@@ -34,13 +35,19 @@ async def load_or_save_pickle(file_name, data_function):
 
 @app.get("/api/get-emails")
 async def get_emails():
-    email_data: EmailResponse = await load_or_save_pickle('email_data.pickle', get_email_data)
+    if DEV >= 1:
+        email_data: EmailResponse = await load_or_save_pickle('email_data.pickle', get_email_data)
+    else:
+        email_data = await get_email_data()
     return jsonable_encoder(email_data)
 
 
 @app.get("/api/get-calendar")
 async def get_calendar():
-    calendar_data: CalendarResponse = await load_or_save_pickle('calendar_events.pickle', get_event_related_emails)
+    if DEV >= 1:
+        calendar_data: CalendarResponse = await load_or_save_pickle('calendar_events.pickle', get_event_related_emails)
+    else:
+        calendar_data = await get_event_related_emails()
     return jsonable_encoder(calendar_data)
 
 
