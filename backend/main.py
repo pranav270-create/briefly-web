@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from fastapi import HTTPException
+from pydantic import BaseModel
+from typing import Union
 
 from integrations.google_calendar import CalendarEvent
 from integrations.gmail import GmailMessage
@@ -50,8 +52,10 @@ async def get_calendar():
         calendar_data = await get_event_related_emails()
     return jsonable_encoder(calendar_data)
 
+class NewsRequest(BaseModel):
+    clickedSummary: str
 
-LessBriefRequest = GmailMessage | CalendarEvent
+LessBriefRequest = Union[GmailMessage, CalendarEvent, NewsRequest]
 
 @app.post("/api/less-brief")
 async def get_less_brief(request: LessBriefRequest):
@@ -60,9 +64,10 @@ async def get_less_brief(request: LessBriefRequest):
         if request.classification == 'personal':
             return {"content": request.body}
         
-        # news emails search the web
-        elif request.classification == "news":
-            return {"content": ""} #generate_news_summary(request.body)}
+    # news emails search the web
+    elif isinstance(request, NewsRequest):
+        print(request)
+        return {"content": ""} #generate_news_summary(request.body)}
         
     # calendar events expose more data
     elif isinstance(request, CalendarEvent):

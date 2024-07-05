@@ -74,24 +74,32 @@ export default function Home() {
     fetchData();
   }, []);
 
-  const handleItemClick = useCallback(async (id: string, data: any) => {
+  const handleItemClick = useCallback(async (id: string, data: any, clickedSummary?: string) => {
     setSelectedItemId(id);
     if (!cachedLessBriefData[id]) {
-    //   setLessBriefData(cachedLessBriefData[id]);
-    // } else {
       try {
+        let bodyData; // data to send to backend
+        if (data.classification == 'personal' || data.start) {
+          // for calendar events and personal emails
+          bodyData = data;
+        } else {
+          // for news emails, only send the string the user clicked on
+          bodyData = { clickedSummary };
+        }
+
         const response = await fetch('http://localhost:8000/api/less-brief', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify(bodyData),
         });
         if (!response.ok) {
           throw new Error('Failed to fetch less brief data');
         }
         const lessBriefData: LessBriefData = await response.json();
         setLessBriefData(lessBriefData);
+        setCachedLessBriefData(prev => ({ ...prev, [id]: lessBriefData }));
       } catch (error) {
         console.error('Error fetching less brief data:', error);
       }
@@ -137,7 +145,7 @@ export default function Home() {
                   <div 
                     key={summaryIndex}
                     className="py-1.5 -ml-4 pl-4  bg-midjourney_navy rounded cursor-pointer hover:bg-briefly_box transition-colors duration-200"
-                    onClick={() => handleItemClick(`${id}-${summaryIndex}`, { ...item, summary: summaryItem })}
+                    onClick={() => handleItemClick(`${id}-${summaryIndex}`, item, summaryItem)}
                   >
                     <p className="text-sm text-sub_sub_grey">{summaryItem}</p>
                   </div>
