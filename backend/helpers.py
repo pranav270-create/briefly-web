@@ -49,4 +49,4 @@ class ContextVar:
 
 
 DEBUG = ContextVar("DEBUG", 1)
-DEV = ContextVar("LAKE", 0)
+DEV = ContextVar("DEV", 1)
