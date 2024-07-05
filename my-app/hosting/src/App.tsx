@@ -43,7 +43,9 @@ export default function Home() {
   const [newsEmails, setNewsEmails] = useState<Email[]>([]);
   const [spamEmails, setSpamEmails] = useState<Email[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(null);
+  const [selectedPersonalEmailId, setSelectedPersonalEmailId] = useState<string | null>(null);
+  const [selectedNewsItemIds, setSelectedNewsItemIds] = useState<Set<string>>(new Set());
   const [lessBriefData, setLessBriefData] = useState<LessBriefData | null>(null);
   const [cachedLessBriefData, setCachedLessBriefData] = useState<CachedLessBriefData>({});
 
@@ -75,17 +77,31 @@ export default function Home() {
   }, []);
 
   const handleItemClick = useCallback(async (id: string, data: any, clickedSummary?: string) => {
-    setSelectedItemId(id);
-    if (!cachedLessBriefData[id]) {
-      try {
-        let bodyData; // data to send to backend
-        if (data.classification == 'personal' || data.start) {
-          // for calendar events and personal emails
-          bodyData = data;
+    // classify the pr
+    const isCalendar = 'start' in data;
+    const isPersonalEmail = data.classification === 'personal';
+    const isNewsItem = !isCalendar && !isPersonalEmail;
+
+    // data ids
+    if (isCalendar) {
+      setSelectedCalendarId(prevId => prevId === id ? null : id);
+    } else if (isPersonalEmail) {
+      setSelectedPersonalEmailId(prevId => prevId === id ? null : id);
+    } else if (isNewsItem) {
+      setSelectedNewsItemIds(prevIds => {
+        const newIds = new Set(prevIds);
+        if (newIds.has(id)) {
+          newIds.delete(id);
         } else {
-          // for news emails, only send the string the user clicked on
-          bodyData = { clickedSummary };
+          newIds.add(id);
         }
+        return newIds;
+      });
+    }
+
+      if (!cachedLessBriefData[id]) {
+      try {
+        let bodyData = isNewsItem ? { clickedSummary } : data;
 
         const response = await fetch('http://localhost:8000/api/less-brief', {
           method: 'POST',
@@ -98,24 +114,31 @@ export default function Home() {
           throw new Error('Failed to fetch less brief data');
         }
         const lessBriefData: LessBriefData = await response.json();
-        setLessBriefData(lessBriefData);
         setCachedLessBriefData(prev => ({ ...prev, [id]: lessBriefData }));
       } catch (error) {
         console.error('Error fetching less brief data:', error);
       }
     }
-  }, [cachedLessBriefData]);
+  }, []);
 
   const renderItem = useCallback((item: CalendarEvent | Email, index: number, type: 'calendar' | 'email') => {
     const id = `${type}-${index}`;
     const itemLessBriefData = cachedLessBriefData[id];
+    const isCalendar = type === 'calendar';
+    const isPersonalEmail = type === 'email' && (item as Email).classification === 'personal';
+    const isNewsItem = type === 'email' && (item as Email).classification !== 'personal';
+    
+    const isSelected = isCalendar ? selectedCalendarId === id :
+                       isPersonalEmail ? selectedPersonalEmailId === id :
+                       selectedNewsItemIds.has(id);
+
     return (
       <li 
         key={id} 
-        className={`p-4 transition-colors duration-200 rounded-lg ${(type === 'calendar' || (type === 'email' && (item as Email).classification === 'personal')) ? 'cursor-pointer' : ''} ${selectedItemId === id ? 'bg-briefly_box' : (type === 'calendar' || (type === 'email' && (item as Email).classification === 'personal')) ? 'hover:bg-briefly_box' : ''}`}
-        onClick={() => type === 'calendar' ? handleItemClick(id, item) : null}
+        className={`p-4 transition-colors duration-200 rounded-lg ${(isCalendar || isPersonalEmail) ? 'cursor-pointer' : ''} ${isSelected ? 'bg-briefly_box' : (isCalendar || isPersonalEmail) ? 'hover:bg-briefly_box' : ''}`}
+        onClick={() => (isCalendar || isPersonalEmail) ? handleItemClick(id, item) : null}
         >
-        {type === 'calendar' ? (
+        {isCalendar ? (
           // Render calendar event
           <>
             <p className="text-md font-semibold text-main_white">{(item as CalendarEvent).summary}</p>
@@ -133,6 +156,11 @@ export default function Home() {
                 <p className="text-sm text-sub_sub_grey whitespace-pre-wrap">{(item as CalendarEvent).context}</p>
               </div>
             )}
+            {isSelected && itemLessBriefData && (
+              <div className="mt-4 p-4 bg-briefly_box rounded-lg">
+                <p className="text-sm text-sub_sub_grey whitespace-pre-wrap">{itemLessBriefData.content}</p>
+              </div>
+            )}
           </>
         ) : (
           // Render email
@@ -145,36 +173,38 @@ export default function Home() {
                   <div 
                     key={summaryIndex}
                     className="py-1.5 -ml-4 pl-4  bg-midjourney_navy rounded cursor-pointer hover:bg-briefly_box transition-colors duration-200"
-                    onClick={() => handleItemClick(`${id}-${summaryIndex}`, item, summaryItem)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleItemClick(`${id}-${summaryIndex}`, item, summaryItem);
+                    }}
                   >
                     <p className="text-sm text-sub_sub_grey">{summaryItem}</p>
+                    {selectedNewsItemIds.has(`${id}-${summaryIndex}`) && cachedLessBriefData[`${id}-${summaryIndex}`] && (
+                      <div className="mt-4 p-4 bg-briefly_box rounded-lg">
+                        <p className="text-sm text-sub_sub_grey whitespace-pre-wrap">{cachedLessBriefData[`${id}-${summaryIndex}`].content}</p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             ) : (
               <p
               className="text-sm text-sub_sub_grey "
-              onClick={() => handleItemClick(id, item)}
+              onClick={() => isPersonalEmail ? handleItemClick(id, item) : null}
               >
                 {(item as Email).summary}
             </p>
             )}
+            {isPersonalEmail && isSelected && itemLessBriefData && (
+              <div className="mt-4 p-4 bg-briefly_box rounded-lg">
+                <p className="text-sm text-sub_sub_grey whitespace-pre-wrap">{itemLessBriefData.content}</p>
+              </div>
+            )}
           </>
-        )}
-        {selectedItemId === id && lessBriefData && (
-          <div className="mt-4 p-4 bg-briefly_box rounded-lg">
-            <p className="text-sm text-sub_sub_grey whitespace-pre-wrap">{lessBriefData.content}</p>
-          </div>
-        )}
-        {itemLessBriefData && (
-          <div className={`mt-4 p-4 bg-briefly_box rounded-lg ${selectedItemId === id ? '' : 'opacity-50'}`}>
-            <p className="text-sm text-sub_sub_grey whitespace-pre-wrap">{itemLessBriefData.content}</p>
-          </div>
         )}
       </li>
     );
-  }, [selectedItemId, lessBriefData, handleItemClick]);
-
+  }, [selectedCalendarId, selectedPersonalEmailId, selectedNewsItemIds, cachedLessBriefData, handleItemClick]);
 
   return (
     <div className="bg-midjourney_navy flex flex-col min-h-screen text-white">
