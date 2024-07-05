@@ -6,8 +6,8 @@ from instructor import from_anthropic, Mode
 
 from integrations.gmail import get_messages_since_yesterday, get_attendee_email_threads, GmailMessage
 from integrations.google_calendar import get_today_events, CalendarEvent
+from helpers import DEBUG
 
-DEBUG = 1
 SELF_EMAIL = "markacastellano2@gmail.com"
 
 

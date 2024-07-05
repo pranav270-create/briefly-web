@@ -13,9 +13,9 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 from webdriver_manager.chrome import ChromeDriverManager
 import concurrent.futures
 
+from helpers import DEBUG
 from make_briefly import anthropic_cost
 
-DEBUG = 1
 
 class SearchResult(BaseModel):
     title: str

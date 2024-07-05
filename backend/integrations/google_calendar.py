@@ -5,8 +5,8 @@ from typing import List, Optional
 
 sys.path.append('..')
 from .gmail import get_google_api_service
+from helpers import DEBUG
 
-DEBUG = 1
 
 class CalendarEvent(BaseModel):
     summary: str
