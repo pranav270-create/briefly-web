@@ -170,6 +170,9 @@ export default function Home() {
 
   return (
     <div className="bg-midjourney_navy flex flex-col min-h-screen text-white">
+      <header className="bg-midjourney_navy w-full flex-shrink-0" style={{ height: '40px' }}>
+        <div className="w-full h-full">&nbsp;</div>
+      </header>
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="bg-briefly_box p-6 mb-8 rounded-lg shadow-lg flex justify-center items-center">
           <pre className="text-white font-mono text-sm">
