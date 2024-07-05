@@ -24,12 +24,12 @@ app.add_middleware(
 )
 
 
-async def load_or_save_pickle(file_name, data_function):
+async def load_or_save_pickle(file_name, data_function, *args):
     if os.path.exists(file_name):
         with open(file_name, 'rb') as f:
             return pickle.load(f)
     else:
-        data = await data_function()
+        data = await data_function(*args)
         with open(file_name, 'wb') as f:
             pickle.dump(data, f)
         return data
@@ -66,8 +66,11 @@ async def get_less_brief(request: LessBriefRequest):
         
     # news emails search the web
     elif isinstance(request, NewsRequest):
-        print(request)
-        return {"content": ""} #generate_news_summary(request.body)}
+        if DEV >= 1:
+            briefless = await load_or_save_pickle('briefless_news.pickle', generate_news_summary, request.clickedSummary)
+        else:
+            briefless = await generate_news_summary(request.clickedSummary)
+        return {"content": briefless}
         
     # calendar events expose more data
     elif isinstance(request, CalendarEvent):

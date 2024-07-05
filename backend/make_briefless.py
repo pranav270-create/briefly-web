@@ -1,4 +1,4 @@
-import os, time, asyncio, requests
+import os, asyncio, aiohttp
 from pydantic import BaseModel
 from typing import Optional, List, Tuple
 import anthropic
@@ -63,6 +63,9 @@ def scrape_urls(urls, max_workers=5):
     """
     selenium scraper to download html pages
     """
+    if DEBUG >= 1:
+        print(f"Scraping Web", flush=True)
+
     results = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_url = {executor.submit(scrape_url, url): url for url in urls}
@@ -81,6 +84,9 @@ def generate_search_query(client: anthropic.Anthropic, summary: str) -> Tuple[st
     """
     snippet of text from a newsletter -> google search query
     """
+    if DEBUG >= 1:
+        print(f"Generating Search Query")
+
     prompt = f"""
     Based on this snippet of news, generate a very concise Google search query to find more information
     <snippet>
@@ -94,14 +100,19 @@ def generate_search_query(client: anthropic.Anthropic, summary: str) -> Tuple[st
         model="claude-3-5-sonnet-20240620"
     )
     cost = anthropic_cost(response.usage)
+    if DEBUG >= 1:
+        print(f"Search Query: {response.content[0].text.strip()}", flush=True)
     return response.content[0].text.strip(), cost
 
 
-async def async_google_search(session, query: str, num_results=10) -> Optional[List[SearchResult]]:
+async def async_google_search(query: str, num_results=10) -> Optional[List[SearchResult]]:
     """
     google search api
     num_results max is 10
     """
+    if DEBUG >= 1:
+        print(f"Searching Google", flush=True)
+
     api_key = os.environ.get("GOOGLE_SEARCH_API_KEY")
     cse_id = os.environ.get("GOOGLE_SEARCH_CSE_ID")
 
@@ -117,19 +128,20 @@ async def async_google_search(session, query: str, num_results=10) -> Optional[L
     }
 
     async def fetch_results():
-        async with session.get(search_url, params=params) as response:
-            if response.status == 200:
-                search_results = await response.json()
-                items = search_results.get('items', [])
-                results = [SearchResult(title=item['title'], href=item['link'], body=item.get('snippet', '')) for item in items]
-                return results if results else []
-            elif response.status == 400:
-                error_content = await response.text()
-                print(f"Error 400: Bad Request. Content: {error_content}", flush=True)
-                return []
-            else:
-                print(f"Error: {response.status}")
-                return []
+        async with aiohttp.ClientSession() as session:
+            async with session.get(search_url, params=params) as response:
+                if response.status == 200:
+                    search_results = await response.json()
+                    items = search_results.get('items', [])
+                    results = [SearchResult(title=item['title'], href=item['link'], body=item.get('snippet', '')) for item in items]
+                    return results if results else []
+                elif response.status == 400:
+                    error_content = await response.text()
+                    print(f"Error 400: Bad Request. Content: {error_content}", flush=True)
+                    return []
+                else:
+                    print(f"Error: {response.status}")
+                    return []
 
     results = await fetch_results()
     if not results:
@@ -160,6 +172,9 @@ def summarize_search_results(client, original_summary: str, search_results: List
     """
     10 pages of cleaned html -> summary
     """
+    if DEBUG >= 1:
+        print(f"Summarizing Search Results")
+
     research = ''.join([f"\nPage {i+1}:\n" + s for i, s in enumerate(search_results)])
     prompt = f"""
     After reading a small news segment, I have conducted additional research on the topic. 
@@ -170,7 +185,7 @@ def summarize_search_results(client, original_summary: str, search_results: List
     </news_segment>
 
     <research>
-    {search_results}
+    {research}
     </research>"""
     
     response = client.messages.create(
@@ -181,7 +196,7 @@ def summarize_search_results(client, original_summary: str, search_results: List
         model="claude-3-5-sonnet-20240620"
     )
     cost = anthropic_cost(response.usage)
-    return response.completion.strip(), cost
+    return response.content[0].text.strip(), cost
 
 
 async def generate_news_summary(email_summary: str):
@@ -189,21 +204,14 @@ async def generate_news_summary(email_summary: str):
     given some information on a topic, go to the web and get more information for the user
     """
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-    if DEBUG >= 1:
-        print(f"Generating Search Query")
     search_query, cost = generate_search_query(client, email_summary)
-    if DEBUG >= 1:
-        print(f"Search Query: {search_query}")
-        print(f"Searching Google")
     search_results: List[SearchResult] = await async_google_search(query=search_query)
-    if DEBUG >= 1:
-        print(f"Scraping Web")
     web_pages = scrape_urls(urls=[s.href for s in search_results])
     search_results_text = [extract_text_from_html(web_page) for web_page in web_pages]
-    if DEBUG >= 1:
-        print(f"Summarizing Search Results")
     final_summary, cost2 = summarize_search_results(client, email_summary, search_results_text)
-    print(f"Total Cost: {cost + cost2}")
+    print(f"Total Cost: {cost + cost2}", flush=True)
+    if DEBUG >= 1:
+        print(f"{final_summary}", flush=True)
     return final_summary
 
 
