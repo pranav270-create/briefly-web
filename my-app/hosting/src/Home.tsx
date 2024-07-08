@@ -87,12 +87,12 @@ export default function Home() {
       const [emailsResponse, calendarResponse] = await Promise.all([
         fetch(`${baseUrl}/get-emails`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${localStorage.getItem('jwtToken')}`,
           },
         }),
         fetch(`${baseUrl}/get-calendar`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${localStorage.getItem('jwtToken')}`,
           },
         }),
       ]);

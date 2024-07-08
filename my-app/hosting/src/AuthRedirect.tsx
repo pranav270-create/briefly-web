@@ -24,7 +24,7 @@ const OAuthRedirect = () => {
       .then(response => response.json())
       .then(data => {
         // Store the JWT from your backend
-        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('jwtToken', data.access_token);
         // Redirect to home with the updated data
         navigate('/');
       })

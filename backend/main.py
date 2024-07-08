@@ -6,7 +6,7 @@ from fastapi import HTTPException, Header, Depends
 from pydantic import BaseModel
 from typing import Union
 
-from users import router, loginflow
+from users import router, loginflow, CurrentUser
 from integrations.google_calendar import CalendarEvent
 from integrations.gmail import GmailMessage
 from make_briefly import get_email_data, get_event_related_emails, EmailResponse, CalendarResponse
@@ -45,22 +45,47 @@ async def get_token_header(authorization: str = Header(None)):
     return authorization.split(" ")[1]
 
 
+async def get_user_header(authorization: str = Header(None)):
+    if DEV >= 1:
+        return CurrentUser(email="test", google_token="test")
+    if authorization is None or not authorization:
+        raise HTTPException(status_code=400, detail="Invalid or missing token")
+    return await loginflow(authorization.split(" ")[1])
+
+
 @app.get("/api/get-emails")
-async def get_emails(token: str = Depends(get_token_header)):
+async def get_emails(user: CurrentUser = Depends(get_user_header)):
     if DEV >= 1:
         email_data: EmailResponse = await load_or_save_pickle('email_data.pickle', get_email_data)
     else:
-        email_data = await get_email_data(token=token)
+        email_data = await get_email_data(token=user.google_token)
     return jsonable_encoder(email_data)
 
 
 @app.get("/api/get-calendar")
-async def get_calendar(token: str = Depends(get_token_header)):
+async def get_calendar(user: CurrentUser = Depends(get_user_header)):
     if DEV >= 1:
         calendar_data: CalendarResponse = await load_or_save_pickle('calendar_events.pickle', get_event_related_emails)
     else:
-        calendar_data = await get_event_related_emails(token=token)
+        calendar_data = await get_event_related_emails(token=user.google_token)
     return jsonable_encoder(calendar_data)
+
+# @app.get("/api/get-emails")
+# async def get_emails(token: str = Depends(get_token_header)):
+#     if DEV >= 1:
+#         email_data: EmailResponse = await load_or_save_pickle('email_data.pickle', get_email_data)
+#     else:
+#         email_data = await get_email_data(token=token)
+#     return jsonable_encoder(email_data)
+
+
+# @app.get("/api/get-calendar")
+# async def get_calendar(token: str = Depends(get_token_header)):
+#     if DEV >= 1:
+#         calendar_data: CalendarResponse = await load_or_save_pickle('calendar_events.pickle', get_event_related_emails)
+#     else:
+#         calendar_data = await get_event_related_emails(token=token)
+#     return jsonable_encoder(calendar_data)
 
 
 class NewsRequest(BaseModel):
