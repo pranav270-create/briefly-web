@@ -4,7 +4,6 @@ from fastapi import APIRouter
 from fastapi import status
 from fastapi import Depends, HTTPException, status
 import jwt
-from jwt import JWTError
 from pydantic import BaseModel
 from typing import Annotated, Optional
 from sqlalchemy import DateTime, String, func, create_engine, JSON
@@ -51,7 +50,7 @@ def get_gcp_engine() -> Engine:
     return engine
 
 
-engine = get_gcp_engine(db_name=os.environ.get('DB_NAME'))
+engine = get_gcp_engine()
 sessionlocal = sessionmaker(bind=engine)
 
 
@@ -128,7 +127,7 @@ async def get_current_user(token: str, session: Annotated[Session, Depends(get_s
             raise credentials_exception
 
         return CurrentUser(email=email, google_token=google_token, recommendations=user.recommendations)
-    except JWTError:
+    except Exception:
         raise credentials_exception
 
 
