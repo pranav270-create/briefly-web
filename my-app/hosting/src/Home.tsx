@@ -248,7 +248,7 @@ export default function Home() {
   return (
     <div className="bg-midjourney_navy flex flex-col min-h-screen text-white">
       <GoogleLogin />
-      {localStorage.getItem('accessToken') && (
+      {localStorage.getItem('jwtToken') && (
         <button onClick={fetchData}>Fetch Data</button>
       )}
       <header className="bg-midjourney_navy w-full flex-shrink-0" style={{ height: '40px' }}>
