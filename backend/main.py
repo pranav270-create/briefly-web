@@ -2,7 +2,7 @@ import pickle, os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
-from fastapi import HTTPException
+from fastapi import HTTPException, Header, Depends
 from pydantic import BaseModel
 from typing import Union
 
@@ -17,12 +17,11 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],#=["http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 async def load_or_save_pickle(file_name, data_function, *args):
     if os.path.exists(file_name):
@@ -34,22 +33,26 @@ async def load_or_save_pickle(file_name, data_function, *args):
             pickle.dump(data, f)
         return data
 
+async def get_token_header(authorization: str = Header(None)):
+    if authorization is None or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=400, detail="Invalid or missing token")
+    return authorization.split(" ")[1]
 
 @app.get("/api/get-emails")
-async def get_emails():
+async def get_emails(token: str = Depends(get_token_header)):
     if DEV >= 1:
         email_data: EmailResponse = await load_or_save_pickle('email_data.pickle', get_email_data)
     else:
-        email_data = await get_email_data()
+        email_data = await get_email_data(token=token)
     return jsonable_encoder(email_data)
 
 
 @app.get("/api/get-calendar")
-async def get_calendar():
+async def get_calendar(token: str = Depends(get_token_header)):
     if DEV >= 1:
         calendar_data: CalendarResponse = await load_or_save_pickle('calendar_events.pickle', get_event_related_emails)
     else:
-        calendar_data = await get_event_related_emails()
+        calendar_data = await get_event_related_emails(token=token)
     return jsonable_encoder(calendar_data)
 
 class NewsRequest(BaseModel):
@@ -78,6 +81,17 @@ async def get_less_brief(request: LessBriefRequest):
 
     else:
         raise HTTPException(status_code=400, detail="Invalid input data")
+
+class AccessToken(BaseModel):
+    access_token: str
+
+@app.post("/api/token")
+async def login(token: AccessToken):
+    if token.access_token:
+        print("Access token provided", flush=True)
+        return {"status": "success"}
+    else:
+        print("No access token provided", flush=True)
 
 
 if __name__ == "__main__":

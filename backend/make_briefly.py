@@ -1,5 +1,5 @@
 import asyncio, os
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from pydantic import BaseModel, Field
 from anthropic import AsyncAnthropic
 from instructor import from_anthropic, Mode
@@ -61,21 +61,21 @@ async def summarize_thread(client, thread):
     return response.content[0].text.strip(), cost
 
 
-async def get_event_related_emails() -> CalendarResponse:
+async def get_event_related_emails(token: Optional[str] = None) -> CalendarResponse:
     """
     Get's emails related to todays events
     """
     client = AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     
     # Get today's events
-    events: List[CalendarEvent] = get_today_events()
+    events: List[CalendarEvent] = get_today_events(token=token)
     
     total_cost = 0
     for event in events:
         attendees = event.attendees
         non_self_attendees = [attendee for attendee in attendees if attendee != SELF_EMAIL]
         
-        thread_messages = get_attendee_email_threads(non_self_attendees)
+        thread_messages = get_attendee_email_threads(non_self_attendees, token=token)
 
         if thread_messages:
             # Summarize the thread
@@ -174,14 +174,14 @@ async def summarize_news_email(client, email: GmailMessage) -> Tuple[NewsletterS
     return response_model, cost
 
 
-async def get_email_data() -> Tuple[List[GmailMessage], List[GmailMessage]]:
+async def get_email_data(token: Optional[str] = None) -> Tuple[List[GmailMessage], List[GmailMessage]]:
     """
     Gets emails from past day
     Classifies them as personal, news, spam
     Summarizes them
     """
     # get emails
-    emails: List[GmailMessage] = get_messages_since_yesterday()
+    emails: List[GmailMessage] = get_messages_since_yesterday(token=token)
     
     # classify emails
     client = AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])

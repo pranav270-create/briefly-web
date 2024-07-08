@@ -1,1 +1,2 @@
-gcloud run deploy briefly-backend --source . --platform managed --memory=4Gi --min-instances=2 --region us-east4 --allow-unauthenticated
+env_vars=$(sed 's/#.*//g' .env | xargs | sed 's/ /,/g')
+gcloud run deploy briefly-backend --source . --platform managed --memory=4Gi --min-instances=2 --region us-east4 --allow-unauthenticated --set-env-vars=$env_vars

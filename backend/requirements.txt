@@ -6,3 +6,6 @@ uvicorn
 gunicorn
 google-auth
 google-auth-oauthlib
+instructor
+selenium
+webdriver_manager

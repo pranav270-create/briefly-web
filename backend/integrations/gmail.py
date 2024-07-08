@@ -9,9 +9,11 @@ from bs4 import BeautifulSoup
 from pydantic import BaseModel, Field
 from collections import defaultdict
 
+from integrations.auth import get_google_api_service
 
-CREDENTIALS = "C:/Users/marka/fun/briefly/backend/integrations/markacastellano2@gmail_credentials_desktop.json"
-TOKEN = "C:/Users/marka/fun/briefly/backend/integrations/token.json"
+
+CREDENTIALS = "./integrations/markacastellano2@gmail_credentials_desktop.json"
+TOKEN = "./integrations/token.json"
 
 class GmailMessage(BaseModel):
     id: str
@@ -37,27 +39,6 @@ def extract_email(address):
         return match.group(1)
     return address if '@' in address else ''
 
-
-def get_google_api_service(service_name: str, version: str):
-    """
-    Gets Google API service, which lets you log into Google APIs
-    """
-    SCOPES = ["https://mail.google.com/", "https://www.googleapis.com/auth/calendar"]
-    creds = None
-    if os.path.exists(TOKEN):
-        creds = Credentials.from_authorized_user_file(TOKEN, SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS, SCOPES)
-            creds = flow.run_local_server(port=0)
-        assert (creds) is not None, "No GMAIL credientals found"
-        with open(TOKEN, 'w') as token:
-            token.write(creds.to_json())
-    return build(service_name, version, credentials=creds)
-
-
 def decode_and_clean(encoded_data):
     decoded_data = base64.urlsafe_b64decode(encoded_data).decode('utf-8')
     soup = BeautifulSoup(decoded_data, 'html.parser')
@@ -79,8 +60,8 @@ def get_message_body(payload):
 
 
 
-def get_messages_since_yesterday():
-    service = get_google_api_service('gmail', 'v1')
+def get_messages_since_yesterday(token: Optional[str] = None):
+    service = get_google_api_service('gmail', 'v1', token)
     
     # Calculate yesterday's date and today's date
     yesterday = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
@@ -122,8 +103,8 @@ def get_messages_since_yesterday():
     return downloaded_messages
 
 
-def get_attendee_email_threads(attendees: List[str], threads_per_attendee = 10):
-    service = get_google_api_service('gmail', 'v1')
+def get_attendee_email_threads(attendees: List[str], token: Optional[str] = None, threads_per_attendee = 10):
+    service = get_google_api_service('gmail', 'v1', token)
     
     # attendees = ['pranaviyer2@gmail.com', 'donny@apeiron.life']
     all_threads = []

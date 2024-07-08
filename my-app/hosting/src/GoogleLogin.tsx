@@ -1,26 +1,28 @@
-import { GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from "jwt-decode";
+const GoogleLogin = () => {
+  const oauthSignIn = () => {
+    // Google's OAuth 2.0 endpoint for requesting an access token
+    const oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
 
-const GoogleSignIn = ({ onLoginSuccess }: any) => {
-  const handleSuccess = (credentialResponse: any) => {
-    const decoded = jwtDecode(credentialResponse.credential);
-    console.log(decoded);
-    
-    // Send the ID token to your backend
-    onLoginSuccess(credentialResponse.credential);
-  };
+    // Parameters to pass to OAuth 2.0 endpoint.
+    const params = {
+      'client_id': '673278476323-gd8p0jcn0lspqs3e8n9civolog1n1b55.apps.googleusercontent.com',
+      'redirect_uri': 'https://briefly-2ba6d.web.app/oauth-callback',
+      'response_type': 'token',
+      'scope': 'https://mail.google.com/ https://www.googleapis.com/auth/calendar',
+      'include_granted_scopes': 'true',
+      'state': 'pass-through value'
+    };
 
-  const handleError = () => {
-    console.log('Login Failed');
+    // Create the URL with parameters
+    const url = `${oauth2Endpoint}?${new URLSearchParams(params)}`;
+
+    // Redirect to the OAuth 2.0 endpoint
+    window.location.href = url;
   };
 
   return (
-    <GoogleLogin
-      onSuccess={handleSuccess}
-      onError={handleError}
-      useOneTap
-    />
+    <button onClick={oauthSignIn}>Sign in with Google</button>
   );
 };
 
-export default GoogleSignIn;
+export default GoogleLogin;
