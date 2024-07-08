@@ -2,9 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 
 import Footer from './Footer';
 import GoogleLogin from './GoogleLogin';
-
-// const baseUrl = 'http://localhost:8000/api';
-const baseUrl = 'https://briefly-backend-krnivdrwhq-uk.a.run.app/api';
+import baseUrl from './env';
 
 interface Email {
   id: string;

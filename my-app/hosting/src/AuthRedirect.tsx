@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// const baseUrl = 'http://localhost:8000/api';
-const baseUrl = 'https://briefly-backend-krnivdrwhq-uk.a.run.app/api';
+import baseUrl from './env';
 
 const OAuthRedirect = () => {
   const navigate = useNavigate();

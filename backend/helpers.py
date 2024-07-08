@@ -48,5 +48,5 @@ class ContextVar:
         return self.value < x
 
 
-DEBUG = ContextVar("DEBUG", os.environ.get("DEBUG", 0))
-DEV = ContextVar("DEV", os.environ.get("DEV", 0))
+DEBUG = ContextVar("DEBUG", int(os.environ.get("DEBUG", 0)))
+DEV = ContextVar("DEV", int(os.environ.get("DEV", 0)))

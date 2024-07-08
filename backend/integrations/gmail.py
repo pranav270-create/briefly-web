@@ -1,5 +1,5 @@
 import os, base64, re
-from typing import List, Optional
+from typing import List, Optional, Union
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -26,7 +26,7 @@ class GmailMessage(BaseModel):
     body: str
     date: str
     classification: Optional[str] = None
-    summary: str | List[str] = ""
+    summary: Union[str, List[str]] = ""
 
 
 # def extract_email(string: str) -> str:
