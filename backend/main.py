@@ -34,6 +34,8 @@ async def load_or_save_pickle(file_name, data_function, *args):
         return data
 
 async def get_token_header(authorization: str = Header(None)):
+    if DEV >= 1:
+        return None  # the token should say "test"
     if authorization is None or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=400, detail="Invalid or missing token")
     return authorization.split(" ")[1]

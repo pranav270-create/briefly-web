@@ -78,6 +78,12 @@ export default function Home() {
   //   fetchData();
   // }, []);
 
+  useEffect(() => {
+    if (baseUrl.includes('localhost')) {
+      localStorage.setItem('accessToken', 'test');
+    }
+  }, []);
+
   async function fetchData() {
     try {
       const [emailsResponse, calendarResponse] = await Promise.all([

@@ -83,9 +83,13 @@ def get_messages_since_yesterday(token: Optional[str] = None):
         msg = service.users().messages().get(userId='me', id=message['id'], format='full').execute()
         subject = next(header['value'] for header in msg['payload']['headers'] if header['name'].lower() == 'subject')
         sender = next(header['value'] for header in msg['payload']['headers'] if header['name'].lower() == 'from')
-        sender_email = sender.split('<')[1].split('>')[0]
-        sender = sender.split('<')[0].strip()
-        
+        try: 
+            sender_email = sender.split('<')[1].split('>')[0]
+            sender = sender.split('<')[0].strip()
+        except:
+            sender_email = sender
+            sender = sender
+
         body = get_message_body(msg['payload'])
         
         downloaded_messages.append(GmailMessage(
@@ -141,14 +145,19 @@ def get_attendee_email_threads(attendees: List[str], token: Optional[str] = None
                 if cc:
                     recipient_emails += [extract_email(r.strip()) for r in cc.split(',')]
                 thread_participants.update([sender_email] + recipient_emails)
-                
+
+                try: 
+                    sender_name = sender.split('<')[0].strip()
+                except:
+                    sender_name = sender
+
                 thread_msgs.append(GmailMessage(
                     id=msg['id'],
                     threadId=msg['threadId'],
                     labels=msg['labelIds'],
                     snippet=msg['snippet'],
                     subject=subject,
-                    sender = sender.split('<')[0].strip(),
+                    sender = sender_name,
                     sender_email=sender_email,
                     body=body,
                     date=msg['internalDate']
