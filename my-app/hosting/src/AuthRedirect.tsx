@@ -37,7 +37,7 @@ const OAuthRedirect = () => {
     }
   }, [navigate]);
 
-  return <div>Processing authentication...</div>;
+  return <div>Authenticating User ... Please Wait</div>;
 };
 
 export default OAuthRedirect;

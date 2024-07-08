@@ -12,3 +12,4 @@ webdriver_manager
 sqlalchemy
 PyJWT
 cloud-sql-python-connector
+pg8000
