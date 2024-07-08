@@ -6,6 +6,7 @@ from fastapi import HTTPException, Header, Depends
 from pydantic import BaseModel
 from typing import Union
 
+from users import router, loginflow
 from integrations.google_calendar import CalendarEvent
 from integrations.gmail import GmailMessage
 from make_briefly import get_email_data, get_event_related_emails, EmailResponse, CalendarResponse
@@ -13,6 +14,7 @@ from make_briefless import generate_news_summary, generate_calendar_event_detail
 from helpers import DEV
 
 app = FastAPI()
+app.include_router(router)
 
 # Add CORS middleware
 app.add_middleware(
@@ -22,6 +24,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 async def load_or_save_pickle(file_name, data_function, *args):
     if os.path.exists(file_name):
@@ -33,12 +36,14 @@ async def load_or_save_pickle(file_name, data_function, *args):
             pickle.dump(data, f)
         return data
 
+
 async def get_token_header(authorization: str = Header(None)):
     if DEV >= 1:
         return None  # the token should say "test"
     if authorization is None or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=400, detail="Invalid or missing token")
     return authorization.split(" ")[1]
+
 
 @app.get("/api/get-emails")
 async def get_emails(token: str = Depends(get_token_header)):
@@ -57,10 +62,13 @@ async def get_calendar(token: str = Depends(get_token_header)):
         calendar_data = await get_event_related_emails(token=token)
     return jsonable_encoder(calendar_data)
 
+
 class NewsRequest(BaseModel):
     clickedSummary: str
 
+
 LessBriefRequest = Union[GmailMessage, CalendarEvent, NewsRequest]
+
 
 @app.post("/api/less-brief")
 async def get_less_brief(request: LessBriefRequest):
@@ -68,7 +76,7 @@ async def get_less_brief(request: LessBriefRequest):
         # personal emails expose the entire body
         if request.classification == 'personal':
             return {"content": request.body}
-        
+
     # news emails search the web
     elif isinstance(request, NewsRequest):
         if DEV >= 1:
@@ -76,24 +84,13 @@ async def get_less_brief(request: LessBriefRequest):
         else:
             briefless = await generate_news_summary(request.clickedSummary)
         return {"content": briefless}
-        
+
     # calendar events expose more data
     elif isinstance(request, CalendarEvent):
         return {"content": generate_calendar_event_details(request)}
 
     else:
         raise HTTPException(status_code=400, detail="Invalid input data")
-
-class AccessToken(BaseModel):
-    access_token: str
-
-@app.post("/api/token")
-async def login(token: AccessToken):
-    if token.access_token:
-        print("Access token provided", flush=True)
-        return {"status": "success"}
-    else:
-        print("No access token provided", flush=True)
 
 
 if __name__ == "__main__":

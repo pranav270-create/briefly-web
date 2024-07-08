@@ -8,12 +8,15 @@ import os, base64, re
 
 CREDENTIALS = "C:/Users/marka/fun/briefly/backend/integrations/markacastellano2@gmail_credentials_desktop.json"
 TOKEN = "C:/Users/marka/fun/briefly/backend/integrations/token.json"
+SCOPES = [
+    "https://mail.google.com/",
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/userinfo.email"
+]
 
 
 def get_google_api_service(service_name: str, version: str, token: Optional[str] = None):
-    print(token, flush=True)
     if token is not None:
-        SCOPES = ["https://mail.google.com/", "https://www.googleapis.com/auth/calendar"]
         creds = Credentials(token=token, scopes=SCOPES)
         if not creds.valid:
             if creds.expired and creds.refresh_token:
@@ -22,10 +25,6 @@ def get_google_api_service(service_name: str, version: str, token: Optional[str]
                 raise ValueError("Invalid credentials")
         return build(service_name, version, credentials=creds)
     else:
-        """
-        Gets Google API service, which lets you log into Google APIs
-        """
-        SCOPES = ["https://mail.google.com/", "https://www.googleapis.com/auth/calendar"]
         creds = None
         if os.path.exists(TOKEN):
             creds = Credentials.from_authorized_user_file(TOKEN, SCOPES)

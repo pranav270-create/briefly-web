@@ -8,7 +8,7 @@ const GoogleLogin = () => {
       'client_id': '673278476323-gd8p0jcn0lspqs3e8n9civolog1n1b55.apps.googleusercontent.com',
       'redirect_uri': 'https://briefly-2ba6d.web.app/oauth-callback',
       'response_type': 'token',
-      'scope': 'https://mail.google.com/ https://www.googleapis.com/auth/calendar',
+      'scope': 'https://mail.google.com/ https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email',
       'include_granted_scopes': 'true',
       'state': 'pass-through value'
     };
