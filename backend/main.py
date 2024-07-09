@@ -6,7 +6,7 @@ from fastapi import HTTPException, Header, Depends
 from pydantic import BaseModel
 from typing import Union
 
-from users import router, loginflow, CurrentUser
+from users import router, get_current_user, CurrentUser
 from integrations.google_calendar import CalendarEvent
 from integrations.gmail import GmailMessage
 from make_briefly import get_email_data, get_event_related_emails, EmailResponse, CalendarResponse
@@ -50,7 +50,7 @@ async def get_user_header(authorization: str = Header(None)):
         return CurrentUser(email="test", google_token="test")
     if authorization is None or not authorization:
         raise HTTPException(status_code=400, detail="Invalid or missing token")
-    return await loginflow(authorization.split(" ")[1])
+    return await get_current_user(authorization.split(" ")[1])
 
 
 @app.get("/api/get-emails")

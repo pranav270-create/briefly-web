@@ -106,7 +106,8 @@ def create_user(email: str, session: Session):
     return db_user
 
 
-async def get_current_user(token: str, session: Annotated[Session, Depends(get_session)]) -> CurrentUser:
+async def get_current_user(token: str) -> CurrentUser:
+    session = sessionlocal()
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -114,12 +115,14 @@ async def get_current_user(token: str, session: Annotated[Session, Depends(get_s
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(payload, flush=True)
         email: str = payload.get("email")
         google_token: str = payload.get("google_token")
         if email is None or google_token is None:
             raise credentials_exception
 
         user = session.query(UserDB).filter(UserDB.email == email).first()
+        print(user, flush=True)
         if user is None:
             raise credentials_exception
 
@@ -153,11 +156,6 @@ async def register_user(token: GoogleToken, session: Session = Depends(get_sessi
     )
 
     return AccessToken(access_token=jwt_token, expiry_time=ACCESS_TOKEN_EXPIRE_MINUTES*60, token_type="bearer")
-
-
-async def loginflow(token: str) -> CurrentUser:
-    current_user = get_current_user(token)
-    return current_user
 
 
 if __name__ == "__main__":
