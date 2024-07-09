@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, status
 import jwt
 from pydantic import BaseModel
 from typing import Annotated, Optional
-from sqlalchemy import DateTime, String, func, create_engine, JSON
+from sqlalchemy import DateTime, String, func, create_engine, JSON, Integer
 from sqlalchemy.orm import DeclarativeBase, mapped_column
 from sqlalchemy.engine import Engine
 from google.cloud.sql.connector import Connector, IPTypes
@@ -55,19 +55,12 @@ sessionlocal = sessionmaker(bind=engine)
 
 
 """ SQLAlchemy Models """
-class Base(DeclarativeBase):
-    __abstract__ = True
-    id = mapped_column()
-    created_at = mapped_column(
-        DateTime,
-        default=func.now(),
-    )
-
-class UserDB(Base):
+class UserDB(DeclarativeBase):
     __tablename__ = "users"
-    email = mapped_column(String, primary_key=True)
+    id: int = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: str = mapped_column(String, unique=True, nullable=False)
     recommendations = mapped_column(JSON, nullable=True)
-
+    created_at = mapped_column(DateTime, default=func.now())
 
 """ Pydantic Models """
 class CurrentUser(BaseModel):
