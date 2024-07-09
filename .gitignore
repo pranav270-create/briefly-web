@@ -6,6 +6,7 @@ __pycache__/
 node_modules/
 .next/
 client_secret*
+.env.local
 
 # C extensions
 *.so

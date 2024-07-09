@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import Annotated, Optional
 from sqlalchemy import DateTime, String, func, create_engine, JSON, Integer
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
+from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.engine import Engine
 from google.cloud.sql.connector import Connector, IPTypes
 from datetime import datetime, timedelta
@@ -60,7 +61,7 @@ class Base(DeclarativeBase):
 
 
 class UserDB(Base):
-    __tablename__ = "users"
+    __tablename__ = "__users__"
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     recommendations = mapped_column(JSON, nullable=True)
 
@@ -154,12 +155,15 @@ async def register_user(token: GoogleToken, session: Session = Depends(get_sessi
     return AccessToken(access_token=jwt_token, expiry_time=ACCESS_TOKEN_EXPIRE_MINUTES*60, token_type="bearer")
 
 
-async def loginflow(token: AccessToken) -> CurrentUser:
-    access_token = token.access_token
-    current_user = get_current_user(access_token)
+async def loginflow(token: str) -> CurrentUser:
+    current_user = get_current_user(token)
     return current_user
 
 
 if __name__ == "__main__":
+    pass
     # Create table if not exists
-    UserDB.metadata.create_all(engine)
+    # UserDB.metadata.create_all(engine)
+    # print tables in database
+    # inspector = Inspector.from_engine(engine)
+    # print(inspector.get_table_names())
