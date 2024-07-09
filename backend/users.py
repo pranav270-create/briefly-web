@@ -158,3 +158,8 @@ async def loginflow(token: AccessToken) -> CurrentUser:
     access_token = token.access_token
     current_user = get_current_user(access_token)
     return current_user
+
+
+if __name__ == "__main__":
+    # Create table if not exists
+    UserDB.metadata.create_all(engine)
