@@ -31,8 +31,8 @@ def setup_driver():
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("--disable-images")
-    chrome_options.page_load_strategy = 'eager'
-    
+    chrome_options.page_load_strategy = "eager"
+
     service = Service(ChromeDriverManager().install())
     return webdriver.Chrome(service=service, options=chrome_options)
 
@@ -45,12 +45,12 @@ def scrape_url(url, timeout=10):
     try:
         driver.set_page_load_timeout(timeout)
         driver.get(url)
-        
+
         # Wait for the body to be present
         WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
-        
+
         return driver.page_source
     except (TimeoutException, WebDriverException) as e:
         print(f"Error scraping {url}: {str(e)}")
@@ -80,7 +80,9 @@ def scrape_urls(urls, max_workers=5):
     return results
 
 
-def generate_search_query(client: anthropic.Anthropic, summary: str) -> Tuple[str, float]:
+def generate_search_query(
+    client: anthropic.Anthropic, summary: str
+) -> Tuple[str, float]:
     """
     snippet of text from a newsletter -> google search query
     """
@@ -93,11 +95,14 @@ def generate_search_query(client: anthropic.Anthropic, summary: str) -> Tuple[st
     {summary}
     </snippet>"""
     response = client.messages.create(
-        messages=[{"role":"user", "content": prompt}, {"role":"assistant", "content": "<search_query>"}],
-        stop_sequences=["</search_query>"], 
-        max_tokens=64, 
+        messages=[
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": "<search_query>"},
+        ],
+        stop_sequences=["</search_query>"],
+        max_tokens=64,
         temperature=0.0,
-        model="claude-3-5-sonnet-20240620"
+        model="claude-3-5-sonnet-20240620",
     )
     cost = anthropic_cost(response.usage)
     if DEBUG >= 1:
@@ -105,7 +110,9 @@ def generate_search_query(client: anthropic.Anthropic, summary: str) -> Tuple[st
     return response.content[0].text.strip(), cost
 
 
-async def async_google_search(query: str, num_results=10) -> Optional[List[SearchResult]]:
+async def async_google_search(
+    query: str, num_results=10
+) -> Optional[List[SearchResult]]:
     """
     google search api
     num_results max is 10
@@ -121,10 +128,10 @@ async def async_google_search(query: str, num_results=10) -> Optional[List[Searc
 
     search_url = "https://www.googleapis.com/customsearch/v1/"
     params = {
-        'q': query,
-        'key': api_key,
-        'cx': cse_id,
-        'num': num_results,
+        "q": query,
+        "key": api_key,
+        "cx": cse_id,
+        "num": num_results,
     }
 
     async def fetch_results():
@@ -132,12 +139,21 @@ async def async_google_search(query: str, num_results=10) -> Optional[List[Searc
             async with session.get(search_url, params=params) as response:
                 if response.status == 200:
                     search_results = await response.json()
-                    items = search_results.get('items', [])
-                    results = [SearchResult(title=item['title'], href=item['link'], body=item.get('snippet', '')) for item in items]
+                    items = search_results.get("items", [])
+                    results = [
+                        SearchResult(
+                            title=item["title"],
+                            href=item["link"],
+                            body=item.get("snippet", ""),
+                        )
+                        for item in items
+                    ]
                     return results if results else []
                 elif response.status == 400:
                     error_content = await response.text()
-                    print(f"Error 400: Bad Request. Content: {error_content}", flush=True)
+                    print(
+                        f"Error 400: Bad Request. Content: {error_content}", flush=True
+                    )
                     return []
                 else:
                     print(f"Error: {response.status}")
@@ -152,7 +168,7 @@ async def async_google_search(query: str, num_results=10) -> Optional[List[Searc
 
 
 def extract_text_from_html(html):
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, "html.parser")
     # Remove script and style elements
     for script in soup(["script", "style"]):
         script.decompose()
@@ -163,19 +179,21 @@ def extract_text_from_html(html):
     # Break multi-headlines into a line each
     chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
     # Drop blank lines
-    text = '\n'.join(chunk for chunk in chunks if chunk)
-    
+    text = "\n".join(chunk for chunk in chunks if chunk)
+
     return text
 
 
-def summarize_search_results(client, original_summary: str, search_results: List[str]) -> Tuple[str, float]:
+def summarize_search_results(
+    client, original_summary: str, search_results: List[str]
+) -> Tuple[str, float]:
     """
     10 pages of cleaned html -> summary
     """
     if DEBUG >= 1:
         print(f"Summarizing Search Results")
 
-    research = ''.join([f"\nPage {i+1}:\n" + s for i, s in enumerate(search_results)])
+    research = "".join([f"\nPage {i+1}:\n" + s for i, s in enumerate(search_results)])
     prompt = f"""
     After reading a small news segment, I have conducted additional research on the topic. 
     Synethize the research into a comprehensive summary that provides detailed insight on the news segment.
@@ -187,13 +205,16 @@ def summarize_search_results(client, original_summary: str, search_results: List
     <research>
     {research}
     </research>"""
-    
+
     response = client.messages.create(
-        messages=[{"role":"user", "content": prompt}, {"role":"assistant", "content": "<comprehensive_summary>"}],
-        stop_sequences=["</comprehensive_summary>"], 
-        max_tokens=64, 
+        messages=[
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": "<comprehensive_summary>"},
+        ],
+        stop_sequences=["</comprehensive_summary>"],
+        max_tokens=64,
         temperature=0.0,
-        model="claude-3-5-sonnet-20240620"
+        model="claude-3-5-sonnet-20240620",
     )
     cost = anthropic_cost(response.usage)
     return response.content[0].text.strip(), cost
@@ -208,7 +229,9 @@ async def generate_news_summary(email_summary: str):
     search_results: List[SearchResult] = await async_google_search(query=search_query)
     web_pages = scrape_urls(urls=[s.href for s in search_results])
     search_results_text = [extract_text_from_html(web_page) for web_page in web_pages]
-    final_summary, cost2 = summarize_search_results(client, email_summary, search_results_text)
+    final_summary, cost2 = summarize_search_results(
+        client, email_summary, search_results_text
+    )
     print(f"Total Cost: {cost + cost2}", flush=True)
     if DEBUG >= 1:
         print(f"{final_summary}", flush=True)
@@ -233,6 +256,8 @@ def generate_calendar_event_details(request):
 
 
 if __name__ == "__main__":
-    sample_summary = "SpaceX launches new satellite constellation for global internet coverage"
+    sample_summary = (
+        "SpaceX launches new satellite constellation for global internet coverage"
+    )
     detailed_summary = asyncio.run(generate_news_summary(sample_summary))
     print(detailed_summary)

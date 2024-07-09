@@ -115,14 +115,9 @@ async def get_current_user(token: str) -> CurrentUser:
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(payload, flush=True)
         email: str = payload.get("email")
         google_token: str = payload.get("google_token")
-        if email is None or google_token is None:
-            raise credentials_exception
-
         user = session.query(UserDB).filter(UserDB.email == email).first()
-        print(user, flush=True)
         if user is None:
             raise credentials_exception
 
