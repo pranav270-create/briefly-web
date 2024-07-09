@@ -7,7 +7,7 @@ import jwt
 from pydantic import BaseModel
 from typing import Annotated, Optional
 from sqlalchemy import DateTime, String, func, create_engine, JSON, Integer
-from sqlalchemy.orm import DeclarativeBase, mapped_column
+from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
 from sqlalchemy.engine import Engine
 from google.cloud.sql.connector import Connector, IPTypes
 from datetime import datetime, timedelta
@@ -53,14 +53,17 @@ def get_gcp_engine() -> Engine:
 engine = get_gcp_engine()
 sessionlocal = sessionmaker(bind=engine)
 
-
 """ SQLAlchemy Models """
-class UserDB(DeclarativeBase):
-    __tablename__ = "users"
-    id: int = mapped_column(Integer, primary_key=True, autoincrement=True)
-    email: str = mapped_column(String, unique=True, nullable=False)
-    recommendations = mapped_column(JSON, nullable=True)
+class Base(DeclarativeBase):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     created_at = mapped_column(DateTime, default=func.now())
+
+
+class UserDB(Base):
+    __tablename__ = "users"
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    recommendations = mapped_column(JSON, nullable=True)
+
 
 """ Pydantic Models """
 class CurrentUser(BaseModel):
