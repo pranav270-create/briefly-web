@@ -66,7 +66,7 @@ class Base(DeclarativeBase):
 class UserDB(Base):
     __tablename__ = "users"
     email = mapped_column(String, primary_key=True)
-    recommendations = mapped_column(JSON, nullable=True, description="Recommendations for the user")
+    recommendations = mapped_column(JSON, nullable=True)
 
 
 """ Pydantic Models """
