@@ -194,8 +194,10 @@ def summarize_search_results(
         print(f"Summarizing Search Results")
 
     research = "".join([f"\nPage {i+1}:\n" + s for i, s in enumerate(search_results)])
+    if DEBUG >= 1:
+        print(f"Research: {research}", flush=True)
     prompt = f"""
-    After reading a small news segment, I have conducted additional research on the topic. 
+    After reading a small news segment, I have conducted additional research on the topic.
     Synethize the research into a comprehensive summary that provides detailed insight on the news segment.
 
     <news_segment>
@@ -212,7 +214,7 @@ def summarize_search_results(
             {"role": "assistant", "content": "<comprehensive_summary>"},
         ],
         stop_sequences=["</comprehensive_summary>"],
-        max_tokens=64,
+        max_tokens=2000,
         temperature=0.0,
         model="claude-3-5-sonnet-20240620",
     )

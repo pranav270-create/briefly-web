@@ -48,6 +48,7 @@ export default function Home() {
   const [selectedNewsItemIds, setSelectedNewsItemIds] = useState<Set<string>>(new Set());
   const [lessBriefData, setLessBriefData] = useState<LessBriefData | null>(null);
   const [cachedLessBriefData, setCachedLessBriefData] = useState<CachedLessBriefData>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (baseUrl.includes('localhost')) {
@@ -56,6 +57,7 @@ export default function Home() {
   }, []);
 
   async function fetchData() {
+    setIsLoading(true);
     try {
       const [emailsResponse, calendarResponse] = await Promise.all([
         fetch(`${baseUrl}/get-emails`, {
@@ -83,7 +85,9 @@ export default function Home() {
       setNewsEmails(emailsData.news_emails);
       setSpamEmails(emailsData.spam_emails);
       setCalendarEvents(calendarData.events);
+      setIsLoading(false);
     } catch (error) {
+      setIsLoading(false);
       console.error('Error fetching data:', error);
     }
   }
@@ -237,10 +241,11 @@ export default function Home() {
             justifyContent: 'center', // Center horizontally
             position: 'absolute', // Position the button
             top: '0', // Top right corner
-            right: '0' // Top right corner
+            right: '30px', // Top right corner
+            ...(isLoading ? { animation: 'spin 1s linear infinite' } : {}), // Conditional animation
           }}
       >
-      &#128640;
+        {isLoading ? '🔄' : '📥'}
       </button>
       )}
       <header className="bg-midjourney_navy w-full flex-shrink-0" style={{ height: '40px' }}>

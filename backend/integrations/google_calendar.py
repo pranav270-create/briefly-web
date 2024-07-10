@@ -33,37 +33,73 @@ def get_today_events(token: Optional[str] = None, days_before=2, days_after=0):
     start = datetime.combine(start_date, datetime.min.time()).isoformat() + "Z"
     end = datetime.combine(end_date, datetime.min.time()).isoformat() + "Z"
 
-    events_result = (
-        service.events()
-        .list(
-            calendarId="primary",
-            timeMin=start,
-            timeMax=end,
-            singleEvents=True,
-            orderBy="startTime",
-        )
-        .execute()
-    )
-    events = events_result.get("items", [])
+    # Retrieve all calendars
+    calendar_list = service.calendarList().list().execute()
 
     today_events: List[CalendarEvent] = []
-    for event in events:
-        start = event["start"].get("dateTime", event["start"].get("date"))
-        end = event["end"].get("dateTime", event["end"].get("date"))
-        today_events.append(
-            CalendarEvent(
-                summary=event["summary"],
-                creator=event.get("creator").get("email", ""),
-                organizer=event.get("organizer").get("email", ""),
-                attendees=[
-                    attendee.get("email", "") for attendee in event.get("attendees", [])
-                ],
-                start=start,
-                end=end,
-                description=event.get("description", ""),
-                location=event.get("location", ""),
+    for calendar_entry in calendar_list.get('items', []):
+        events_result = (
+            service.events()
+            .list(
+                calendarId=calendar_entry['id'],
+                timeMin=start,
+                timeMax=end,
+                singleEvents=True,
+                orderBy="startTime",
             )
+            .execute()
         )
+        events = events_result.get("items", [])
+
+        for event in events:
+            start = event["start"].get("dateTime", event["start"].get("date"))
+            end = event["end"].get("dateTime", event["end"].get("date"))
+            today_events.append(
+                CalendarEvent(
+                    summary=event["summary"],
+                    creator=event.get("creator").get("email", ""),
+                    organizer=event.get("organizer").get("email", ""),
+                    attendees=[
+                        attendee.get("email", "") for attendee in event.get("attendees", [])
+                    ],
+                    start=start,
+                    end=end,
+                    description=event.get("description", ""),
+                    location=event.get("location", ""),
+                )
+            )
+
+    # events_result = (
+    #     service.events()
+    #     .list(
+    #         calendarId="primary",
+    #         timeMin=start,
+    #         timeMax=end,
+    #         singleEvents=True,
+    #         orderBy="startTime",
+    #     )
+    #     .execute()
+    # )
+    # events = events_result.get("items", [])
+
+    # today_events: List[CalendarEvent] = []
+    # for event in events:
+    #     start = event["start"].get("dateTime", event["start"].get("date"))
+    #     end = event["end"].get("dateTime", event["end"].get("date"))
+    #     today_events.append(
+    #         CalendarEvent(
+    #             summary=event["summary"],
+    #             creator=event.get("creator").get("email", ""),
+    #             organizer=event.get("organizer").get("email", ""),
+    #             attendees=[
+    #                 attendee.get("email", "") for attendee in event.get("attendees", [])
+    #             ],
+    #             start=start,
+    #             end=end,
+    #             description=event.get("description", ""),
+    #             location=event.get("location", ""),
+    #         )
+    #     )
 
     if DEBUG >= 1:
         print(f"Found {len(events)} events for today.", flush=True)
