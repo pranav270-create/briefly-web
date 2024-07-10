@@ -14,3 +14,4 @@ google-auth
 google-auth-oauthlib
 pg8000
 starlette
+sse-starlette

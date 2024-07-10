@@ -175,7 +175,7 @@ async def stream_data_speech(query: str):
                     yield json.dumps(jsonable_encoder(AudioAnswer(text=accumulated_text, audio=audio_data)))
 
                     accumulated_text = ""  # Reset accumulated text for the next batch
-                    await asyncio.sleep(2)  # Wait for 2 seconds before processing the next batch
+                    await asyncio.sleep(3)  # Wait for 2 seconds before processing the next batch
 
     except Exception as e:
         print(f"Error in stream_data: {str(e)}")
