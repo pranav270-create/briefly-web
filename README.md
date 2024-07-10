@@ -10,6 +10,11 @@ Send an email to pranaviyer2@gmail.com to get added to the test users
 
 ## Running Locally
 
+# Frontend: 
+cd my-app/hosting and run: npm run dev
+
+# Backend:
+
 You need a credentials.json file which will grant you access to your gmail account progamatically. To do so, you must create a project in the gcloud console, the details of which are not included here.
 
 To run the backend with development and debug settings enabled, create a .env file with the following:
