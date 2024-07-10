@@ -230,6 +230,8 @@ async def generate_news_summary(email_summary: str):
     # search_query, cost = generate_search_query(client, email_summary)
     search_query = email_summary
     search_results: List[SearchResult] = await async_google_search(query=search_query)
+    # only grab top 5
+    search_results = search_results[:5]
     web_pages = scrape_urls(urls=[s.href for s in search_results])
     search_results_text = [extract_text_from_html(web_page) for web_page in web_pages]
     final_summary, cost2 = summarize_search_results(

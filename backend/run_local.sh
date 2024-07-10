@@ -13,5 +13,5 @@ else
         fi
     done < .env
     # run server locally
-    python3 main.py
+    uvicorn main:app --reload --port 8080 --host 0.0.0.0
 fi

@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback } from 'react';
 import Footer from './Footer';
 import GoogleLogin from './GoogleLogin';
 import baseUrl from './env';
+import AudioStreamer from './TextAndSpeech';
+import SimpleText from './SimpleText';
 
 interface Email {
   id: string;
@@ -115,24 +117,48 @@ export default function Home() {
       });
     }
 
-      if (!cachedLessBriefData[id]) {
+    // Handle content based on item type
+    if (!cachedLessBriefData[id]) {
       try {
-        let bodyData = isNewsItem ? { clickedSummary } : data;
+        let content;
+        if (isNewsItem) {
+          // For news items, issue a POST request
+          const response = await fetch(`${baseUrl}/less-brief`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ clickedSummary }),
+          });
+          if (!response.ok) {
+            throw new Error('Failed to fetch less brief data');
+          }
+          content = await response.json();
+        } else if (isPersonalEmail) {
+          // For personal emails, use the data directly
+          content = { content: data.body }; // Assuming 'data.body' contains the email content
+        } else if (isCalendar) {
+          // For calendar items, format the content
+          content = {
+            content: `
+              Event: ${data.summary}
+              When: ${data.start} - ${data.end}
+              Where: ${data.location || 'No location specified'}
+              Organizer: ${data.organizer}
+              Attendees: ${data.attendees.join(', ')}
 
-        const response = await fetch(`${baseUrl}/less-brief`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(bodyData),
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch less brief data');
+              Description:
+              ${data.description}
+
+              Context:
+              ${data.context}
+            `.trim()
+          };
         }
-        const lessBriefData: LessBriefData = await response.json();
-        setCachedLessBriefData(prev => ({ ...prev, [id]: lessBriefData }));
+        // Update the cache with the content
+        setCachedLessBriefData(prev => ({ ...prev, [id]: content }));
       } catch (error) {
-        console.error('Error fetching less brief data:', error);
+        console.error('Error handling item click:', error);
       }
     }
   }, []);
@@ -241,7 +267,7 @@ export default function Home() {
             justifyContent: 'center', // Center horizontally
             position: 'absolute', // Position the button
             top: '0', // Top right corner
-            right: '30px', // Top right corner
+            right: '0', // Top right corner
             ...(isLoading ? { animation: 'spin 1s linear infinite' } : {}), // Conditional animation
           }}
       >
@@ -264,6 +290,9 @@ export default function Home() {
                          |___/ `}
           </pre>
         </div>
+        <h2 className="text-3xl font-bold mb-6">daily learning</h2>
+        {/* <AudioStreamer /> */}
+        <SimpleText />
         <h2 className="text-3xl font-bold mb-6">calendar</h2>
         <ul className="space-y-2">
           {calendarEvents.map((event, index) => renderItem(event, index, 'calendar'))}

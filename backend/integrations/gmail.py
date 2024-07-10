@@ -60,11 +60,12 @@ def get_messages_since_yesterday(token: Optional[str] = None):
     now = datetime.now()
 
     # Convert dates to RFC 3339 format
-    yesterday_str = yesterday.strftime("%Y/%m/%d")
-    now_str = now.strftime("%Y/%m/%d")
+    yesterday_str = yesterday.strftime("%Y-%m-%d")
+    # To include emails from today, add one day to 'now' before converting
+    now_plus_one = (now + timedelta(days=1)).strftime("%Y-%m-%d")
 
     # Construct the query
-    query = f"after:{yesterday_str} before:{now_str}"
+    query = f"after:{yesterday_str} before:{now_plus_one}"
 
     # Get messages
     results = service.users().messages().list(userId="me", q=query).execute()

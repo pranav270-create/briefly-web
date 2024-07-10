@@ -20,16 +20,15 @@ class CalendarEvent(BaseModel):
     context: str = Field(default="")
 
 
-def get_today_events(token: Optional[str] = None, days_before=2, days_after=0):
+def get_today_events(token: Optional[str] = None, days_before=1, days_after=0):
     service = get_google_api_service("calendar", "v3", token)
 
     # Get the start and end of the desired date range
     today = datetime.now().date()
     start_date = today - timedelta(days=days_before)
     end_date = today + timedelta(
-        days=days_after + 1
-    )  # Add 1 to include the full last day
-
+        days=days_after + 2
+    )
     start = datetime.combine(start_date, datetime.min.time()).isoformat() + "Z"
     end = datetime.combine(end_date, datetime.min.time()).isoformat() + "Z"
 
