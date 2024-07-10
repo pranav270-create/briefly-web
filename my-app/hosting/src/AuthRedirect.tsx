@@ -25,7 +25,7 @@ const OAuthRedirect = () => {
         console.log(data)
         // Store the JWT from your backend
         localStorage.setItem('jwtToken', data.access_token);
-        localStorage.setItem('userEmail', JSON.stringify(data.email));
+        localStorage.setItem('userEmail', JSON.stringify(data.user_email));
         localStorage.setItem('userFirstName', JSON.stringify(data.first_name));
         localStorage.setItem('userLastName', JSON.stringify(data.last_name));
         localStorage.setItem('userProfilePic', JSON.stringify(data.profile_pic));
@@ -41,7 +41,16 @@ const OAuthRedirect = () => {
     }
   }, [navigate]);
 
-  return <div>Authenticating User ... Please Wait</div>;
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100vh',
+    }}>
+      Authenticating User ... Please Wait
+    </div>
+  );
 };
 
 export default OAuthRedirect;

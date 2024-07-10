@@ -90,7 +90,7 @@ def generate_search_query(
         print(f"Generating Search Query")
 
     prompt = f"""
-    Based on this snippet of news, generate a very concise Google search query to find more information
+    Based on this snippet of news, generate a very concise Google search query to find more information about the topic.
     <snippet>
     {summary}
     </snippet>"""
@@ -225,14 +225,15 @@ async def generate_news_summary(email_summary: str):
     given some information on a topic, go to the web and get more information for the user
     """
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-    search_query, cost = generate_search_query(client, email_summary)
+    # search_query, cost = generate_search_query(client, email_summary)
+    search_query = email_summary
     search_results: List[SearchResult] = await async_google_search(query=search_query)
     web_pages = scrape_urls(urls=[s.href for s in search_results])
     search_results_text = [extract_text_from_html(web_page) for web_page in web_pages]
     final_summary, cost2 = summarize_search_results(
         client, email_summary, search_results_text
     )
-    print(f"Total Cost: {cost + cost2}", flush=True)
+    print(f"Total Cost: {cost2}", flush=True)
     if DEBUG >= 1:
         print(f"{final_summary}", flush=True)
     return final_summary

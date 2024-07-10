@@ -51,7 +51,7 @@ const GoogleLogin = () => {
     <div>
     {user ? (
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <img src={user.imageUrl} alt="Profile" style={{ borderRadius: '50%', marginRight: '10px' }} />
+        <img src={user.imageUrl} alt="Profile" style={{ borderRadius: '50%', marginRight: '10px', padding: '5px', border: '1px solid #ccc', width: '60px' }} />
         <div>
           <div>{user.name}</div>
           <div>{user.email}</div>

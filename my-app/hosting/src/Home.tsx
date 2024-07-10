@@ -237,10 +237,10 @@ export default function Home() {
             justifyContent: 'center', // Center horizontally
             position: 'absolute', // Position the button
             top: '0', // Top right corner
-            right: '30px' // Top right corner
+            right: '0' // Top right corner
           }}
       >
-      &#128640; {/* Spaceship emoji as an example icon */}
+      &#128640;
       </button>
       )}
       <header className="bg-midjourney_navy w-full flex-shrink-0" style={{ height: '40px' }}>

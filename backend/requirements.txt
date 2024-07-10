@@ -4,12 +4,12 @@ fastapi
 firebase_admin
 uvicorn
 gunicorn
-google-auth
-google-auth-oauthlib
 instructor
 selenium
 webdriver_manager
 sqlalchemy
 PyJWT
 cloud-sql-python-connector
+google-auth
+google-auth-oauthlib
 pg8000

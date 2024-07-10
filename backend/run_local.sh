@@ -3,7 +3,7 @@ if [ "$1" == "docker" ]; then
     # build docker image
     sudo docker build -t backend:latest .
     # run docker container
-    sudo docker run -p 8000:8000 --env-file .env backend:latest
+    sudo docker run -p 8080:8080 --env-file .env backend:latest
     exit 0
 else
     # source .env file

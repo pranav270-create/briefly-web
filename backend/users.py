@@ -77,7 +77,7 @@ class GoogleToken(BaseModel):
 
 class UserProfile(BaseModel):
     access_token: str
-    email: str
+    user_email: str
     first_name: str
     last_name: str
     profile_pic: str
