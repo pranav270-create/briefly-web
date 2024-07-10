@@ -185,7 +185,7 @@ async def summarize_news_email(
     response_model, completion = await client.messages.create_with_completion(
         model="claude-3-5-sonnet-20240620",
         max_tokens=1024,
-        max_retries=0,
+        max_retries=3,
         messages=[{"role": "user", "content": prompt}],
         response_model=NewsletterSummary,
     )

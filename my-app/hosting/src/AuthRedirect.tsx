@@ -12,7 +12,6 @@ const OAuthRedirect = () => {
     const accessToken = params.get('access_token');
 
     if (accessToken) {
-      localStorage.setItem('accessToken', accessToken);
       // Send the access token to your backend
       fetch(`${baseUrl}/token`, {
         method: 'POST',
@@ -23,8 +22,13 @@ const OAuthRedirect = () => {
       })
       .then(response => response.json())
       .then(data => {
+        console.log(data)
         // Store the JWT from your backend
         localStorage.setItem('jwtToken', data.access_token);
+        localStorage.setItem('userEmail', JSON.stringify(data.email));
+        localStorage.setItem('userFirstName', JSON.stringify(data.first_name));
+        localStorage.setItem('userLastName', JSON.stringify(data.last_name));
+        localStorage.setItem('userProfilePic', JSON.stringify(data.profile_pic));
         // Redirect to home with the updated data
         navigate('/');
       })

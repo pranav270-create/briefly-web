@@ -49,36 +49,9 @@ export default function Home() {
   const [lessBriefData, setLessBriefData] = useState<LessBriefData | null>(null);
   const [cachedLessBriefData, setCachedLessBriefData] = useState<CachedLessBriefData>({});
 
-  // useEffect(() => {
-  //   async function fetchData() {
-  //     try {
-  //       const [emailsResponse, calendarResponse] = await Promise.all([
-  //         fetch(`${baseUrl}/get-emails`),
-  //         fetch(`${baseUrl}/get-calendar`),
-  //       ]);
-
-  //       if (!emailsResponse.ok || !calendarResponse.ok) {
-  //         throw new Error(`HTTP error! status: ${emailsResponse.status} ${calendarResponse.status}`);
-  //       }
-
-  //       const emailsData = await emailsResponse.json();
-  //       const calendarData = await calendarResponse.json();
-
-  //       setPersonalEmails(emailsData.personal_emails);
-  //       setNewsEmails(emailsData.news_emails);
-  //       setSpamEmails(emailsData.spam_emails);
-  //       setCalendarEvents(calendarData.events);
-  //     } catch (error) {
-  //       console.error('Error fetching data:', error);
-  //     } 
-  //   }
-
-  //   fetchData();
-  // }, []);
-
   useEffect(() => {
     if (baseUrl.includes('localhost')) {
-      localStorage.setItem('accessToken', 'test');
+      localStorage.setItem('jwtToken', 'test');
     }
   }, []);
 
@@ -249,7 +222,26 @@ export default function Home() {
     <div className="bg-midjourney_navy flex flex-col min-h-screen text-white">
       <GoogleLogin />
       {localStorage.getItem('jwtToken') && (
-        <button onClick={fetchData}>Fetch Data</button>
+        <button
+          onClick={fetchData}
+          style={{
+            padding: '10px', // Adjust padding for circular shape
+            width: '50px', // Fixed width for circle
+            height: '50px', // Fixed height for circle
+            border: 'none',
+            borderRadius: '50%', // Make it circular
+            cursor: 'pointer',
+            fontSize: '16px',
+            display: 'flex', // Use flex to center the text/icon
+            alignItems: 'center', // Center vertically
+            justifyContent: 'center', // Center horizontally
+            position: 'absolute', // Position the button
+            top: '0', // Top right corner
+            right: '30px' // Top right corner
+          }}
+      >
+      &#128640; {/* Spaceship emoji as an example icon */}
+      </button>
       )}
       <header className="bg-midjourney_navy w-full flex-shrink-0" style={{ height: '40px' }}>
         <div className="w-full h-full">&nbsp;</div>
@@ -267,9 +259,12 @@ export default function Home() {
                          |___/ `}
           </pre>
         </div>
-        <h2 className="text-3xl font-bold mb-6">personal</h2>
+        <h2 className="text-3xl font-bold mb-6">calendar</h2>
         <ul className="space-y-2">
           {calendarEvents.map((event, index) => renderItem(event, index, 'calendar'))}
+        </ul>
+        <h2 className="text-3xl font-bold mb-6">personal</h2>
+        <ul className="space-y-2">
           {personalEmails.map((email, index) => renderItem(email, index, 'email'))}
         </ul>
         <div className="mt-8"></div>

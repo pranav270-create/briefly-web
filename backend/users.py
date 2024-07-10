@@ -75,10 +75,12 @@ class CurrentUser(BaseModel):
 class GoogleToken(BaseModel):
     access_token: str
 
-class AccessToken(BaseModel):
+class UserProfile(BaseModel):
     access_token: str
-    expiry_time: Optional[int] = None
-    token_type: Optional[str] = "bearer"
+    email: str
+    first_name: str
+    last_name: str
+    profile_pic: str
 
 
 """ Functions for Auth and Users """
@@ -127,16 +129,19 @@ async def get_current_user(token: str) -> CurrentUser:
 
 
 def query_google(service):
-    profile = service.people().get(resourceName='people/me', personFields='emailAddresses').execute()
+    profile = service.people().get(resourceName='people/me', personFields='emailAddresses,names,photos').execute()
     email = profile.get('emailAddresses', [{}])[0].get('value')
-    return email
+    first_name = profile.get('names', [{}])[0].get('givenName')
+    last_name = profile.get('names', [{}])[0].get('familyName')
+    profile_pic = profile.get('photos', [{}])[0].get('url')
+    return email, first_name, last_name, profile_pic
 
 
-@router.post("/api/token", tags=["login"], response_model=AccessToken)
+@router.post("/api/token", tags=["login"], response_model=UserProfile)
 async def register_user(token: GoogleToken, session: Session = Depends(get_session)):
     google_access_token = token.access_token
     credentials = get_google_api_service('people', 'v1', google_access_token)
-    email = query_google(credentials)
+    email, first_name, last_name, profile_pic = query_google(credentials)
 
     # Check if user exists in db, create if not
     user = session.query(UserDB).filter(UserDB.email == email).first()
@@ -150,7 +155,7 @@ async def register_user(token: GoogleToken, session: Session = Depends(get_sessi
         expires_delta=access_token_expires
     )
 
-    return AccessToken(access_token=jwt_token, expiry_time=ACCESS_TOKEN_EXPIRE_MINUTES*60, token_type="bearer")
+    return UserProfile(access_token=jwt_token, user_email=email, first_name=first_name, last_name=last_name, profile_pic=profile_pic)
 
 
 if __name__ == "__main__":
