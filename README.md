@@ -8,12 +8,12 @@ In the limit, this should run locally, with integrations for iMessage and Notion
 Note: a web hosted version is running at https://briefly-2ba6d.web.app
 Send an email to pranaviyer2@gmail.com to get added to the test users
 
-## Running Locally
+# Running Locally:
 
-# Frontend: 
+## Frontend: 
 cd my-app/hosting and run: npm run dev
 
-# Backend:
+## Backend:
 
 You need a credentials.json file which will grant you access to your gmail account progamatically. To do so, you must create a project in the gcloud console, the details of which are not included here.
 
