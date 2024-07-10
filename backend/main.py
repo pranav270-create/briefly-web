@@ -91,7 +91,7 @@ async def get_less_brief(request: LessBriefRequest):
     # news emails search the web
     elif isinstance(request, NewsRequest):
         if DEV >= 1:
-            briefless = await load_or_save_pickle('briefless_news.pickle', generate_news_summary, request.clickedSummary)
+            briefless = await generate_news_summary(request.clickedSummary)
         else:
             briefless = await generate_news_summary(request.clickedSummary)
         return {"content": briefless}

@@ -32,22 +32,22 @@ def setup_driver():
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("--disable-images")
     chrome_options.page_load_strategy = "eager"
-
     service = Service(ChromeDriverManager().install())
-    return webdriver.Chrome(service=service, options=chrome_options)
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    return driver
 
 
-def scrape_url(url, timeout=10):
+def scrape_url(url):
     """
     grab 1 html page
     """
     driver = setup_driver()
     try:
-        driver.set_page_load_timeout(timeout)
+        driver.set_page_load_timeout(10)
         driver.get(url)
 
         # Wait for the body to be present
-        WebDriverWait(driver, timeout).until(
+        WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
@@ -76,6 +76,8 @@ def scrape_urls(urls, max_workers=5):
                 if html:
                     results[url] = html
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 print(f"Error processing {url}: {str(e)}")
     return results
 
