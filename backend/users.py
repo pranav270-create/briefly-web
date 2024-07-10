@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 import os
 
 from integrations.auth import get_google_api_service
+from helpers import DEV
 
 """ FastAPI Router """
 router = APIRouter()
@@ -51,8 +52,10 @@ def get_gcp_engine() -> Engine:
     return engine
 
 
-engine = get_gcp_engine()
-sessionlocal = sessionmaker(bind=engine)
+if DEV == 0:
+    engine = get_gcp_engine()
+    sessionlocal = sessionmaker(bind=engine)
+
 
 """ SQLAlchemy Models """
 class Base(DeclarativeBase):
