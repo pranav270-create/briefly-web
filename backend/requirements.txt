@@ -13,3 +13,4 @@ cloud-sql-python-connector
 google-auth
 google-auth-oauthlib
 pg8000
+starlette

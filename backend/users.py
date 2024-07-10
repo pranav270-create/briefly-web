@@ -23,7 +23,7 @@ router = APIRouter()
 """ Encrypted Authentication Keys """
 SECRET_KEY = os.environ.get('SECRET_AUTH_KEY')
 ALGORITHM = os.environ.get('AUTH_ALGORITHM')
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 1 week
 
 
 """ Database Connection """
