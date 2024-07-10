@@ -142,7 +142,7 @@ async def register_user(token: GoogleToken, session: Session = Depends(get_sessi
     google_access_token = token.access_token
     credentials = get_google_api_service('people', 'v1', google_access_token)
     email, first_name, last_name, profile_pic = query_google(credentials)
-
+    print(email, first_name, last_name, profile_pic, flush=True)
     # Check if user exists in db, create if not
     user = session.query(UserDB).filter(UserDB.email == email).first()
     if user is None:
@@ -154,7 +154,6 @@ async def register_user(token: GoogleToken, session: Session = Depends(get_sessi
         data={"email": email, "google_token": google_access_token},
         expires_delta=access_token_expires
     )
-
     return UserProfile(access_token=jwt_token, user_email=email, first_name=first_name, last_name=last_name, profile_pic=profile_pic)
 
 

@@ -143,8 +143,8 @@ async def summarize_personal_email(client, email: GmailMessage) -> Tuple[str, in
     Succinctly summarize personal emails
     """
     prompt = f"""
-    You are a personal assistant, and I need help staying on top of my email inbox. 
-    Summarize the following email concisely:
+    You are a personal assistant, and I need help staying on top of my email inbox.
+    Summarize the following email concisely.:
 
     <email>
     From: {email.sender}
@@ -152,7 +152,7 @@ async def summarize_personal_email(client, email: GmailMessage) -> Tuple[str, in
     Body: {email.body}
     </email>
 
-    Capture the central message the email is trying to convey. Keep the summary very short
+    It is critical to capture the central message the email is trying to convey. Keep the summary very short.
     """
     response = await client.messages.create(
         messages=[
@@ -175,7 +175,7 @@ async def summarize_news_email(
     Summarize news emails
     """
     prompt = f"""
-    Summarize the key topics in the following newsletter. Please respond invalid JSON.
+    Summarize the key topics in the following newsletter. Be descriptive and thorough. Please respond with valid JSON only.
 
     NewsLetter:
     From: {email.sender}
@@ -184,7 +184,7 @@ async def summarize_news_email(
     """
     response_model, completion = await client.messages.create_with_completion(
         model="claude-3-5-sonnet-20240620",
-        max_tokens=1024,
+        max_tokens=2048,
         max_retries=3,
         messages=[{"role": "user", "content": prompt}],
         response_model=NewsletterSummary,
