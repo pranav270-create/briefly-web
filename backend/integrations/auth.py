@@ -6,12 +6,13 @@ from typing import Optional
 import os, base64, re
 
 
-CREDENTIALS = "./gmail_credentials_desktop.json"
+CREDENTIALS = "./gmail.json"
 TOKEN = "./token.json"
 SCOPES = [
     "https://mail.google.com/",
     "https://www.googleapis.com/auth/calendar",
-    "https://www.googleapis.com/auth/userinfo.email"
+    "https://www.googleapis.com/auth/userinfo.email",
+    "openid",
 ]
 
 
