@@ -74,6 +74,11 @@ async def get_less_brief(request: NewsRequest):
     return {"content": briefless}
 
 
+@app.get("/api/client_secret")
+async def get_client_secret():
+    return {"client_secret": os.environ.get("CLIENT_SECRET")}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)

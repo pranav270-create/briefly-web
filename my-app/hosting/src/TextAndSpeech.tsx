@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 
-import baseUrl from './env';
+import {baseUrl} from './env';
 
 const AudioStreamer = () => {
     const [answer, setAnswer] = useState('');

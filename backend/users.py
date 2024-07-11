@@ -52,9 +52,8 @@ def get_gcp_engine() -> Engine:
     return engine
 
 
-if DEV == 0:
-    engine = get_gcp_engine()
-    sessionlocal = sessionmaker(bind=engine)
+engine = get_gcp_engine()
+sessionlocal = sessionmaker(bind=engine)
 
 
 """ SQLAlchemy Models """

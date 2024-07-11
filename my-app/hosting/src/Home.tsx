@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 
 import Footer from './Footer';
 import GoogleLogin from './GoogleLogin';
-import baseUrl from './env';
+import {baseUrl} from './env';
 import AudioStreamer from './TextAndSpeech';
 import SimpleText from './SimpleText';
 
@@ -51,12 +51,6 @@ export default function Home() {
   const [lessBriefData, setLessBriefData] = useState<LessBriefData | null>(null);
   const [cachedLessBriefData, setCachedLessBriefData] = useState<CachedLessBriefData>({});
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (baseUrl.includes('localhost')) {
-      localStorage.setItem('jwtToken', 'test');
-    }
-  }, []);
 
   async function fetchData() {
     setIsLoading(true);
@@ -267,7 +261,7 @@ export default function Home() {
             justifyContent: 'center', // Center horizontally
             position: 'absolute', // Position the button
             top: '0', // Top right corner
-            right: '0', // Top right corner
+            right: '30px', // Top right corner
             ...(isLoading ? { animation: 'spin 1s linear infinite' } : {}), // Conditional animation
           }}
       >
