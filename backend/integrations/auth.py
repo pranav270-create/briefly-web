@@ -6,8 +6,8 @@ from typing import Optional
 import os, base64, re
 
 
-CREDENTIALS = "./gmail.json"
-TOKEN = "./token.json"
+CREDENTIALS = "./gmail_other.json"
+TOKEN = "./token_other.json"
 SCOPES = [
     "https://mail.google.com/",
     "https://www.googleapis.com/auth/calendar",

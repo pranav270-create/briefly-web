@@ -2,8 +2,14 @@ import os, base64, re
 from typing import List, Optional, Union
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from pydantic import BaseModel, Field
 from collections import defaultdict
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent.parent))
 
 from integrations.auth import get_google_api_service
 
@@ -227,13 +233,47 @@ def get_attendee_email_threads(
     return multi_attendee_threads
 
 
+def send_or_save_draft(subject: str, body: str, to: str = "", token: Optional[str] = None, html: bool = False, send: bool = False):
+    service = get_google_api_service("gmail", "v1", token)
+
+    message = MIMEMultipart("alternative") if html else MIMEText(body)
+    message['to'] = to
+    message['subject'] = subject
+    
+    if html:
+        text_part = MIMEText(body, "plain")
+        html_part = MIMEText(body, "html")
+        message.attach(text_part)
+        message.attach(html_part)
+    
+    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
+
+    draft = {
+        'message': {
+            'raw': raw_message
+        }
+    }
+    try:
+        if send:
+            message = service.users().messages().send(userId="me", body={'raw': raw_message}).execute()
+            print(f"Message sent with ID: {message['id']}")
+            return message
+        else:
+            draft = service.users().drafts().create(userId="me", body=draft).execute()
+            print(f"Draft created with ID: {draft['id']}")
+            return draft
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+
+
 if __name__ == "__main__":
-    messages: List[GmailMessage] = get_messages_since_yesterday()
-    print(f"Downloaded {len(messages)} messages.")
-    for i, msg in enumerate(messages):
-        print(f"\033[94mMessage {i+1}:\033[0m")
-        print(f"Subject: {msg.subject}")
-        print(f"From: {msg.sender}")
-        print(f"Date: {msg.date}")
-        print(f"Body: {msg.body[:200]}...")
-        print("---")
+    # messages: List[GmailMessage] = get_messages_since_yesterday()
+    # print(f"Downloaded {len(messages)} messages.")
+    # for i, msg in enumerate(messages):
+    #     print(f"\033[94mMessage {i+1}:\033[0m")
+    #     print(f"Subject: {msg.subject}")
+    #     print(f"From: {msg.sender}")
+    #     print(f"Date: {msg.date}")
+    #     print(f"Body: {msg.body[:200]}...")
+    #     print("---")
